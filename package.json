@@ -1,0 +1,14 @@
+{
+  "name": "focus-time",
+  "version": "1.0.0",
+  "description": "A menu bar focus timer app.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.14"
+  }
+}

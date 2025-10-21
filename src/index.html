@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Time</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            height: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .status {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .timer-label {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .timer-display {
+            font-size: 3.5em;
+            font-weight: 300;
+            margin: 10px 0 30px 0;
+        }
+
+        .writing-mode {
+            font-size: 4em;
+            margin: 20px 0;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .main-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .secondary-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            min-width: 100px;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.small {
+            padding: 8px 16px;
+            font-size: 12px;
+            min-width: 80px;
+        }
+
+        .session-info {
+            margin-top: 20px;
+            font-size: 13px;
+            opacity: 0.7;
+            line-height: 1.6;
+        }
+
+        .goal-input-container {
+            margin: 15px 0;
+            text-align: left;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .goal-input-container label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .goal-input-container input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .goal-input-container input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .goal-input-container input:focus {
+            outline: none;
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .check-in-screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .check-in-screen.active {
+            display: flex;
+        }
+
+        .main-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .main-screen.hidden {
+            display: none;
+        }
+
+        .check-in-goal {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .check-in-goal-text {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 10px 0 25px 0;
+            padding: 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+        }
+
+        .check-in-question {
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .check-in-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .check-in-buttons button {
+            padding: 14px 10px;
+            font-size: 13px;
+            min-width: auto;
+        }
+
+        .notes-input-container {
+            margin: 15px 0;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .notes-input-container label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .notes-input-container input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        .notes-input-container input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .notes-input-container input:focus {
+            outline: none;
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .countdown-text {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-screen" id="mainScreen">
+        <h2>🧠 Focus Time</h2>
+
+        <div class="goal-input-container">
+            <label for="sessionGoal">Your Goal for this Session:</label>
+            <input type="text" id="sessionGoal" placeholder="e.g., Finish chapter 4 of my thesis">
+        </div>
+
+        <div class="status" id="status">Ready to start</div>
+        <div class="timer-label" id="timerLabel">Next Check-in</div>
+        <div class="timer-display" id="timer">15:00</div>
+
+        <div class="controls">
+            <div class="main-controls">
+                <button id="startBtn" onclick="toggleSession()">Start Session</button>
+                <button onclick="resetSession()">Reset</button>
+            </div>
+            <div class="secondary-controls">
+                <button class="small" onclick="openSettings()">Settings</button>
+                <button class="small" onclick="testCheckIn()">Test Check-in</button>
+            </div>
+        </div>
+
+        <div class="session-info">
+            <div>Session: <span id="sessionProgress">0 / 720 min</span></div>
+            <div>Check-ins completed: <span id="checkIns">0</span></div>
+        </div>
+    </div>
+
+    <div class="check-in-screen" id="checkInScreen">
+        <div class="check-in-goal">Your Goal:</div>
+        <div class="check-in-goal-text" id="checkInGoalText">"..."</div>
+
+        <div class="check-in-question">What are you doing right now?</div>
+
+        <div class="check-in-buttons">
+            <button onclick="handleCheckInResponse('On Task')">✅ On Task</button>
+            <button onclick="handleCheckInResponse('Social Media')">📱 Social Media</button>
+            <button onclick="handleCheckInResponse('Email/Chat')">📧 Email/Chat</button>
+            <button onclick="handleCheckInResponse('Other Distraction')">🔀 Other</button>
+            <button onclick="handleCheckInResponse('Taking a Break')" style="grid-column: 1 / -1;">☕️ Taking a Break</button>
+        </div>
+
+        <div class="notes-input-container">
+            <label for="checkInNotes">Optional Notes:</label>
+            <input type="text" id="checkInNotes" placeholder="Quick note about what you're working on...">
+        </div>
+
+        <div class="countdown-text" id="checkInCountdown">Resuming in 20 seconds...</div>
+    </div>
+
+    <script>
+        const { invoke } = window.__TAURI__.tauri;
+        const { listen } = window.__TAURI__.event;
+
+        // Settings (camelCase for frontend; Rust backend renames automatically)
+        let settings = {
+            sessionDuration: 720,
+            checkInInterval: 15,
+            writeTime: 20
+        };
+
+        // Session state
+        let sessionTimeRemaining = 0; // Total session time in seconds
+        let checkInTimeRemaining = 0; // Time until next check-in in seconds
+        let writeTimeRemaining = 0;   // Write time countdown in seconds
+
+        let isSessionRunning = false;
+        let isWriting = false;
+        let checkInsCompleted = 0;
+
+        let sessionInterval = null;
+        let checkInInterval = null;
+        let writeInterval = null;
+
+        // Load settings on start
+        async function loadSettings() {
+            try {
+                const loaded = await invoke('get_settings');
+                settings = { ...settings, ...loaded };
+                console.log('Settings loaded:', settings);
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+                // Use defaults if loading fails
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        async function updateDisplay() {
+            let trayText = '';
+
+            if (isWriting) {
+                document.getElementById('timerLabel').textContent = '✍️ Writing Time';
+                document.getElementById('timer').textContent = writeTimeRemaining + 's';
+                document.getElementById('status').textContent = 'Write what you\'re doing in Notion';
+                trayText = `✍️ ${writeTimeRemaining}s`;
+            } else {
+                document.getElementById('timerLabel').textContent = 'Next Check-in';
+                document.getElementById('timer').textContent = formatTime(checkInTimeRemaining);
+                document.getElementById('status').textContent = isSessionRunning ? 'Session active' : 'Session paused';
+                trayText = formatTime(checkInTimeRemaining);
+            }
+
+            const sessionElapsed = (settings.sessionDuration * 60) - sessionTimeRemaining;
+            const sessionMinsElapsed = Math.floor(sessionElapsed / 60);
+            document.getElementById('sessionProgress').textContent =
+                `${sessionMinsElapsed} / ${settings.sessionDuration} min`;
+            document.getElementById('checkIns').textContent = checkInsCompleted;
+
+            // Update system tray timer
+            try {
+                await invoke('update_tray_timer', { timerText: trayText });
+            } catch (error) {
+                console.error('Failed to update tray timer:', error);
+            }
+        }
+
+        function toggleSession() {
+            const btn = document.getElementById('startBtn');
+
+            if (isSessionRunning) {
+                pauseSession();
+            } else {
+                startSession();
+            }
+        }
+
+        async function startSession() {
+            if (sessionTimeRemaining === 0) {
+                // Fresh start
+                sessionTimeRemaining = settings.sessionDuration * 60;
+                checkInTimeRemaining = settings.checkInInterval * 60;
+                checkInsCompleted = 0;
+            }
+
+            isSessionRunning = true;
+            document.getElementById('startBtn').textContent = 'Pause';
+
+            // Main session timer (runs in background)
+            sessionInterval = setInterval(() => {
+                sessionTimeRemaining--;
+
+                if (sessionTimeRemaining <= 0) {
+                    endSession();
+                }
+            }, 1000);
+
+            // Check-in timer (visible countdown)
+            checkInInterval = setInterval(() => {
+                checkInTimeRemaining--;
+                updateDisplay();
+
+                if (checkInTimeRemaining <= 0) {
+                    triggerCheckIn();
+                }
+            }, 1000);
+
+            // Auto-hide window when session starts
+            try {
+                const { appWindow } = window.__TAURI__.window;
+                await appWindow.hide();
+            } catch (error) {
+                console.error('Failed to hide window:', error);
+            }
+        }
+
+        function pauseSession() {
+            isSessionRunning = false;
+            document.getElementById('startBtn').textContent = 'Resume';
+            clearInterval(sessionInterval);
+            clearInterval(checkInInterval);
+            updateDisplay();
+        }
+
+        function resetSession() {
+            isSessionRunning = false;
+            isWriting = false;
+            sessionTimeRemaining = 0;
+            checkInTimeRemaining = settings.checkInInterval * 60;
+            writeTimeRemaining = 0;
+            checkInsCompleted = 0;
+
+            clearInterval(sessionInterval);
+            clearInterval(checkInInterval);
+            clearInterval(writeInterval);
+
+            document.getElementById('startBtn').textContent = 'Start Session';
+            updateDisplay();
+        }
+
+        async function triggerCheckIn() {
+            pauseSession();
+
+            // Show the window for check-in
+            try {
+                const { appWindow } = window.__TAURI__.window;
+                await appWindow.show();
+                await appWindow.setFocus();
+            } catch (error) {
+                console.error('Failed to show window:', error);
+            }
+
+            // Show check-in screen
+            showCheckInScreen();
+
+            // Start write time countdown
+            isWriting = true;
+            writeTimeRemaining = settings.writeTime;
+            checkInsCompleted++;
+
+            writeInterval = setInterval(() => {
+                writeTimeRemaining--;
+                updateCheckInCountdown();
+
+                if (writeTimeRemaining <= 0) {
+                    // Auto-submit if user hasn't responded
+                    handleCheckInResponse('No Response (Auto)');
+                }
+            }, 1000);
+        }
+
+        function showCheckInScreen() {
+            // Get the session goal
+            const goalText = document.getElementById('sessionGoal').value || '(No goal set)';
+            document.getElementById('checkInGoalText').textContent = `"${goalText}"`;
+
+            // Clear previous notes
+            document.getElementById('checkInNotes').value = '';
+
+            // Show check-in screen, hide main screen
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('checkInScreen').classList.add('active');
+
+            updateCheckInCountdown();
+        }
+
+        function hideCheckInScreen() {
+            document.getElementById('mainScreen').classList.remove('hidden');
+            document.getElementById('checkInScreen').classList.remove('active');
+        }
+
+        function updateCheckInCountdown() {
+            document.getElementById('checkInCountdown').textContent =
+                `Resuming in ${writeTimeRemaining} seconds...`;
+        }
+
+        async function handleCheckInResponse(status) {
+            // Create log entry
+            const sessionGoal = document.getElementById('sessionGoal').value || '';
+            const notes = document.getElementById('checkInNotes').value || '';
+
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                session_goal: sessionGoal,
+                reported_status: status,
+                notes: notes,
+                session_duration_setting: settings.sessionDuration,
+                check_in_interval_setting: settings.checkInInterval,
+                write_time_setting: settings.writeTime,
+                check_in_number: checkInsCompleted
+            };
+
+            // Log to backend
+            console.log('Logging check-in:', logEntry);
+            try {
+                await invoke('log_check_in', { logLine: JSON.stringify(logEntry) });
+                console.log('Check-in logged successfully');
+            } catch (error) {
+                console.error('Failed to log check-in:', error);
+            }
+
+            // End check-in and resume session
+            endWriteTime();
+        }
+
+        function endWriteTime() {
+            clearInterval(writeInterval);
+            isWriting = false;
+
+            // Hide check-in screen
+            hideCheckInScreen();
+
+            // Reset check-in timer for next interval
+            checkInTimeRemaining = settings.checkInInterval * 60;
+
+            // Auto-resume session
+            updateDisplay();
+            startSession();
+        }
+
+        function endSession() {
+            pauseSession();
+            alert('Session complete! Great work! 🎉');
+            resetSession();
+        }
+
+        async function openSettings() {
+            try {
+                await invoke('open_settings');
+            } catch (error) {
+                console.error('Failed to open settings:', error);
+            }
+        }
+
+        async function testCheckIn() {
+            // Immediately trigger a check-in (for testing purposes)
+            console.log('Testing check-in flow...');
+            await triggerCheckIn();
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadSettings();
+            resetSession();
+
+            const unlisten = await listen('settings-updated', (event) => {
+                if (event?.payload) {
+                    settings = { ...settings, ...event.payload };
+
+                    if (!isSessionRunning && !isWriting) {
+                        checkInTimeRemaining = settings.checkInInterval * 60;
+                    }
+
+                    updateDisplay();
+                }
+            });
+
+            window.addEventListener('beforeunload', () => {
+                unlisten();
+            });
+        });
+    </script>
+</body>
+</html>
