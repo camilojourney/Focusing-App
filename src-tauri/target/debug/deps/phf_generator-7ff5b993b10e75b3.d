@@ -1,7 +1,0 @@
-/Users/camilomartinez/github/Focusing-App/src-tauri/target/debug/deps/phf_generator-7ff5b993b10e75b3.d: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/phf_generator-0.10.0/src/lib.rs
-
-/Users/camilomartinez/github/Focusing-App/src-tauri/target/debug/deps/libphf_generator-7ff5b993b10e75b3.rlib: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/phf_generator-0.10.0/src/lib.rs
-
-/Users/camilomartinez/github/Focusing-App/src-tauri/target/debug/deps/libphf_generator-7ff5b993b10e75b3.rmeta: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/phf_generator-0.10.0/src/lib.rs
-
-/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/phf_generator-0.10.0/src/lib.rs:
