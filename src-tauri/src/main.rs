@@ -168,12 +168,20 @@ fn main() {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(quit);
 
-    // Use a proper tray icon
+    // Use a proper tray icon (18x18 is optimal for macOS menu bar)
     let system_tray = SystemTray::new()
-        .with_icon(Icon::Raw(include_bytes!("../icons/32x32.png").to_vec()))
+        .with_icon(Icon::Raw(include_bytes!("../icons/18x18.png").to_vec()))
         .with_menu(tray_menu);
 
     tauri::Builder::default()
+        .setup(|app| {
+            // PROFESSIONAL APPROACH: Hide dock icon using activation policy
+            // This is more reliable than LSUIElement in Info.plist
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+            Ok(())
+        })
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| match event {
             SystemTrayEvent::MenuItemClick { id, .. } => {

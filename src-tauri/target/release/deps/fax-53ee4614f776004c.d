@@ -1,0 +1,11 @@
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/fax-53ee4614f776004c.d: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/maps.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/decoder.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/encoder.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/tiff.rs
+
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/libfax-53ee4614f776004c.rlib: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/maps.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/decoder.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/encoder.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/tiff.rs
+
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/libfax-53ee4614f776004c.rmeta: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/maps.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/decoder.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/encoder.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/tiff.rs
+
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/lib.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/maps.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/decoder.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/encoder.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fax-0.2.6/src/tiff.rs:

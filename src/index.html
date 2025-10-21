@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Time</title>
+    <title>Hyper Awareness</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -63,8 +64,8 @@
         }
 
         button {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: 12px 24px;
             border-radius: 8px;
@@ -75,7 +76,7 @@
         }
 
         button:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-1px);
         }
 
@@ -117,21 +118,21 @@
             width: 100%;
             padding: 10px;
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             font-size: 14px;
             box-sizing: border-box;
         }
 
         .goal-input-container input::placeholder {
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .goal-input-container input:focus {
             outline: none;
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
         .check-in-screen {
@@ -167,7 +168,7 @@
             font-weight: 500;
             margin: 10px 0 25px 0;
             padding: 12px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 8px;
         }
 
@@ -211,21 +212,21 @@
             width: 100%;
             padding: 8px;
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             font-size: 13px;
             box-sizing: border-box;
         }
 
         .notes-input-container input::placeholder {
-            color: rgba(255,255,255,0.5);
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .notes-input-container input:focus {
             outline: none;
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
         .countdown-text {
@@ -235,9 +236,10 @@
         }
     </style>
 </head>
+
 <body>
     <div class="main-screen" id="mainScreen">
-        <h2>🧠 Focus Time</h2>
+        <h2>🧠 Hyper Awareness</h2>
 
         <div class="goal-input-container">
             <label for="sessionGoal">Your Goal for this Session:</label>
@@ -250,12 +252,12 @@
 
         <div class="controls">
             <div class="main-controls">
-                <button id="startBtn" onclick="toggleSession()">Start Session</button>
-                <button onclick="resetSession()">Reset</button>
+                <button id="startBtn">Start Session</button>
+                <button id="resetBtn">Reset</button>
             </div>
             <div class="secondary-controls">
-                <button class="small" onclick="openSettings()">Settings</button>
-                <button class="small" onclick="testCheckIn()">Test Check-in</button>
+                <button class="small" id="settingsBtn">Settings</button>
+                <button class="small" id="testBtn">Test Check-in</button>
             </div>
         </div>
 
@@ -272,11 +274,11 @@
         <div class="check-in-question">What are you doing right now?</div>
 
         <div class="check-in-buttons">
-            <button onclick="handleCheckInResponse('On Task')">✅ On Task</button>
-            <button onclick="handleCheckInResponse('Social Media')">📱 Social Media</button>
-            <button onclick="handleCheckInResponse('Email/Chat')">📧 Email/Chat</button>
-            <button onclick="handleCheckInResponse('Other Distraction')">🔀 Other</button>
-            <button onclick="handleCheckInResponse('Taking a Break')" style="grid-column: 1 / -1;">☕️ Taking a Break</button>
+            <button data-status="On Task">✅ On Task</button>
+            <button data-status="Social Media">📱 Social Media</button>
+            <button data-status="Email/Chat">📧 Email/Chat</button>
+            <button data-status="Other Distraction">🔀 Other</button>
+            <button data-status="Taking a Break" style="grid-column: 1 / -1;">☕️ Taking a Break</button>
         </div>
 
         <div class="notes-input-container">
@@ -288,8 +290,27 @@
     </div>
 
     <script>
-        const { invoke } = window.__TAURI__.tauri;
-        const { listen } = window.__TAURI__.event;
+        console.log('=== SCRIPT LOADED ===');
+
+        // Wait for __TAURI__ to be injected, then set up our API references
+        window.tauriInvoke = null;
+        window.tauriListen = null;
+        window.tauriAppWindow = null;
+
+        // Initialize Tauri APIs when available
+        function initTauriAPIs() {
+            if (window.__TAURI__ && window.__TAURI__.tauri && window.__TAURI__.event && window.__TAURI__.window) {
+                window.tauriInvoke = window.__TAURI__.tauri.invoke;
+                window.tauriListen = window.__TAURI__.event.listen;
+                window.tauriAppWindow = window.__TAURI__.window.appWindow;
+                console.log('Tauri APIs initialized');
+                return true;
+            }
+            return false;
+        }
+
+        // Try to initialize immediately
+        initTauriAPIs();
 
         // Settings (camelCase for frontend; Rust backend renames automatically)
         let settings = {
@@ -297,6 +318,8 @@
             checkInInterval: 15,
             writeTime: 20
         };
+
+        console.log('Initial settings:', settings);
 
         // Session state
         let sessionTimeRemaining = 0; // Total session time in seconds
@@ -314,8 +337,13 @@
         // Load settings on start
         async function loadSettings() {
             try {
-                const loaded = await invoke('get_settings');
-                settings = { ...settings, ...loaded };
+                const loaded = await window.tauriInvoke('get_settings');
+                // Map snake_case from Rust to camelCase for JavaScript
+                settings = {
+                    sessionDuration: loaded.session_duration || settings.sessionDuration,
+                    checkInInterval: loaded.check_in_interval || settings.checkInInterval,
+                    writeTime: loaded.write_time || settings.writeTime
+                };
                 console.log('Settings loaded:', settings);
             } catch (error) {
                 console.error('Failed to load settings:', error);
@@ -352,13 +380,14 @@
 
             // Update system tray timer
             try {
-                await invoke('update_tray_timer', { timerText: trayText });
+                await window.tauriInvoke('update_tray_timer', { timerText: trayText });
             } catch (error) {
                 console.error('Failed to update tray timer:', error);
             }
         }
 
         function toggleSession() {
+            console.log('toggleSession called. isSessionRunning:', isSessionRunning);
             const btn = document.getElementById('startBtn');
 
             if (isSessionRunning) {
@@ -369,6 +398,7 @@
         }
 
         async function startSession() {
+            console.log('startSession called. Settings:', settings);
             if (sessionTimeRemaining === 0) {
                 // Fresh start
                 sessionTimeRemaining = settings.sessionDuration * 60;
@@ -400,8 +430,7 @@
 
             // Auto-hide window when session starts
             try {
-                const { appWindow } = window.__TAURI__.window;
-                await appWindow.hide();
+                await window.tauriAppWindow.hide();
             } catch (error) {
                 console.error('Failed to hide window:', error);
             }
@@ -436,9 +465,8 @@
 
             // Show the window for check-in
             try {
-                const { appWindow } = window.__TAURI__.window;
-                await appWindow.show();
-                await appWindow.setFocus();
+                await window.tauriAppWindow.show();
+                await window.tauriAppWindow.setFocus();
             } catch (error) {
                 console.error('Failed to show window:', error);
             }
@@ -506,7 +534,7 @@
             // Log to backend
             console.log('Logging check-in:', logEntry);
             try {
-                await invoke('log_check_in', { logLine: JSON.stringify(logEntry) });
+                await window.tauriInvoke('log_check_in', { logLine: JSON.stringify(logEntry) });
                 console.log('Check-in logged successfully');
             } catch (error) {
                 console.error('Failed to log check-in:', error);
@@ -539,7 +567,7 @@
 
         async function openSettings() {
             try {
-                await invoke('open_settings');
+                await window.tauriInvoke('open_settings');
             } catch (error) {
                 console.error('Failed to open settings:', error);
             }
@@ -553,12 +581,79 @@
 
         // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOM Content Loaded - initializing app');
+
+            // Wait for Tauri APIs to be available
+            while (!initTauriAPIs()) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            console.log('Tauri APIs loaded successfully');
+
             await loadSettings();
             resetSession();
 
-            const unlisten = await listen('settings-updated', (event) => {
+            // Add event listeners to all buttons
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const testBtn = document.getElementById('testBtn');
+
+            console.log('Button elements found:', {
+                startBtn: !!startBtn,
+                resetBtn: !!resetBtn,
+                settingsBtn: !!settingsBtn,
+                testBtn: !!testBtn
+            });
+
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    console.log('Start button clicked');
+                    toggleSession();
+                });
+            }
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    console.log('Reset button clicked');
+                    resetSession();
+                });
+            }
+
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', () => {
+                    console.log('Settings button clicked');
+                    openSettings();
+                });
+            }
+
+            if (testBtn) {
+                testBtn.addEventListener('click', () => {
+                    console.log('Test Check-in button clicked');
+                    testCheckIn();
+                });
+            }
+
+            console.log('Event listeners added successfully');
+
+            // Add event listeners to check-in buttons
+            const checkInButtons = document.querySelectorAll('.check-in-buttons button');
+            checkInButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const status = button.getAttribute('data-status');
+                    console.log('Check-in button clicked:', status);
+                    handleCheckInResponse(status);
+                });
+            });
+
+            const unlisten = await window.tauriListen('settings-updated', (event) => {
                 if (event?.payload) {
-                    settings = { ...settings, ...event.payload };
+                    // Map snake_case from Rust to camelCase for JavaScript
+                    const payload = event.payload;
+                    settings = {
+                        sessionDuration: payload.session_duration || settings.sessionDuration,
+                        checkInInterval: payload.check_in_interval || settings.checkInInterval,
+                        writeTime: payload.write_time || settings.writeTime
+                    };
 
                     if (!isSessionRunning && !isWriting) {
                         checkInTimeRemaining = settings.checkInInterval * 60;
@@ -571,7 +666,10 @@
             window.addEventListener('beforeunload', () => {
                 unlisten();
             });
+
+            console.log('Initialization complete. Settings:', settings);
         });
     </script>
 </body>
+
 </html>
