@@ -70,13 +70,6 @@ fn log_file_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-fn accountability_file_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let mut path = app_config_dir(&app.config())
-        .ok_or("Unable to determine app config directory")?;
-    fs::create_dir_all(&path).map_err(|e| e.to_string())?;
-    path.push("accountability_box.jsonl");
-    Ok(path)
-}
 
 #[tauri::command]
 fn get_settings(app: AppHandle) -> Result<Settings, String> {
@@ -159,22 +152,6 @@ fn log_check_in(app: AppHandle, log_line: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
-fn save_accountability(app: AppHandle, answers: String) -> Result<(), String> {
-    let path = accountability_file_path(&app)?;
-
-    // Open file in append mode (create if doesn't exist)
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .map_err(|e| e.to_string())?;
-
-    // Write the JSON line with a newline
-    writeln!(file, "{}", answers).map_err(|e| e.to_string())?;
-
-    Ok(())
-}
 
 fn main() {
     // Create system tray menu
@@ -249,8 +226,7 @@ fn main() {
             switch_desktop,
             open_settings,
             update_tray_timer,
-            log_check_in,
-            save_accountability
+            log_check_in
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

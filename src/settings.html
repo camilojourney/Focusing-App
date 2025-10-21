@@ -170,19 +170,6 @@
             <div class="description">How long to pause after switching (default: 20 seconds)</div>
         </div>
 
-        <div class="setting-item">
-            <div class="switch-container">
-                <div>
-                    <label>Enable Accountability Mode</label>
-                    <div class="description">Show reflection questions at check-ins</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="accountabilityMode">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-
         <div class="button-group">
             <button onclick="cancel()">Cancel</button>
             <button class="primary" onclick="saveSettings()">Save</button>
@@ -201,7 +188,6 @@
                 document.getElementById('sessionDuration').value = settings.session_duration;
                 document.getElementById('checkInInterval').value = settings.check_in_interval;
                 document.getElementById('writeTime').value = settings.write_time;
-                document.getElementById('accountabilityMode').checked = settings.accountability_mode || false;
             } catch (error) {
                 console.error('Failed to load settings:', error);
             }

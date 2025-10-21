@@ -6,6 +6,9 @@ authors = ["Your Name"]
 license = "MIT"
 edition = "2021"
 
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
 [build-dependencies]
 tauri-build = { version = "1", features = [] }
 
@@ -16,4 +19,5 @@ tauri = { version = "1", features = [
   "api-all",
   "icon-png",
   "system-tray",
+  "custom-protocol",
 ] }

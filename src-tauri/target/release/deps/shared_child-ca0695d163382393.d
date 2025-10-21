@@ -1,0 +1,10 @@
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/shared_child-ca0695d163382393.d: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/mod.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/unix.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/unix.rs
+
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/libshared_child-ca0695d163382393.rlib: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/mod.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/unix.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/unix.rs
+
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/libshared_child-ca0695d163382393.rmeta: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/mod.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/unix.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/unix.rs
+
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/lib.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/mod.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/sys/unix.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/shared_child-1.1.1/src/unix.rs:

@@ -1,0 +1,10 @@
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/arboard-96013f174c0da222.d: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/common.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/mod.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/osx.rs
+
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/libarboard-96013f174c0da222.rlib: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/common.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/mod.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/osx.rs
+
+/Users/camilomartinez/github/Focusing-App/src-tauri/target/release/deps/libarboard-96013f174c0da222.rmeta: /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/lib.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/common.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/mod.rs /Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/osx.rs
+
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/lib.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/common.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/mod.rs:
+/Users/camilomartinez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arboard-3.6.1/src/platform/osx.rs:
