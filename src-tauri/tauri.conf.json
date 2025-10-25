@@ -23,11 +23,12 @@
         "icons/icon.ico",
         "icons/icon.png"
       ],
+      "resources": ["icons/18x18.png"],
       "macOS": {
         "minimumSystemVersion": "10.13",
         "exceptionDomain": "",
         "frameworks": [],
-        "entitlements": null
+        "entitlements": "entitlements.plist"
       }
     },
     "windows": [
@@ -36,22 +37,24 @@
         "url": "index.html",
         "title": "Hyper Awareness",
         "width": 380,
-        "height": 520,
+        "height": 580,
         "center": true,
         "resizable": false,
         "fullscreen": false,
         "decorations": true,
-        "visible": false,
+        "visible": true,
         "skipTaskbar": true,
-        "alwaysOnTop": false
+        "alwaysOnTop": false,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {
       "csp": null
     },
     "systemTray": {
-      "iconPath": "icons/tray-icon.png",
-      "iconAsTemplate": false
+      "iconPath": "icons/18x18.png",
+      "iconAsTemplate": true
     }
   }
 }

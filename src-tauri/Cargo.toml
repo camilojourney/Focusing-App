@@ -7,7 +7,9 @@ license = "MIT"
 edition = "2021"
 
 [features]
+default = ["custom-protocol", "system-tray"]
 custom-protocol = ["tauri/custom-protocol"]
+system-tray = ["tauri/system-tray"]
 
 [build-dependencies]
 tauri-build = { version = "1", features = [] }
@@ -15,9 +17,15 @@ tauri-build = { version = "1", features = [] }
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri = { version = "1", features = [
+image = { version = "0.24", default-features = false, features = ["png"] }
+tauri = { version = "1", features = [ "system-tray",
   "api-all",
   "icon-png",
-  "system-tray",
-  "custom-protocol",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+objc = "0.2"
+objc-foundation = "0.1"
+objc_id = "0.1"
+block = "0.1"

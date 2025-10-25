@@ -1,24 +1,27 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod calendar;
+
 use std::{
     fs::{self, OpenOptions},
-    io::Write,
+    io::{Cursor, Write},
     path::PathBuf,
-    process::Command,
 };
 
+use image::io::Reader as ImageReader;
 use serde::{Deserialize, Serialize};
 use tauri::{
     api::path::app_config_dir,
     AppHandle,
     CustomMenuItem,
-    Icon,
     Manager,
+    SystemTray,
+    SystemTrayEvent,
+    SystemTrayMenu,
+    SystemTrayMenuItem,
     WindowBuilder,
     WindowUrl,
 };
-
-use tauri::{SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Settings {
@@ -32,7 +35,7 @@ impl Default for Settings {
         Self {
             session_duration: 720,
             check_in_interval: 15,
-            write_time: 20,
+            write_time: 25,
         }
     }
 }
@@ -95,9 +98,9 @@ fn open_settings(app: AppHandle) -> Result<(), String> {
         WindowUrl::App("settings.html".into()),
     )
     .title("Settings")
-    .inner_size(400.0, 500.0)
+    .inner_size(400.0, 430.0)
     .resizable(false)
-    .decorations(false)
+    .decorations(true)
     .visible(true)
     .always_on_top(true)
     .build()
@@ -107,31 +110,17 @@ fn open_settings(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn switch_desktop() -> Result<(), String> {
-    let script = r#"
-        tell application "System Events"
-            key code 18 using {command down}
-        end tell
-    "#;
-
-    let status = Command::new("osascript")
-        .arg("-e")
-        .arg(script)
-        .status()
-        .map_err(|e| e.to_string())?;
-
-    if status.success() {
-        Ok(())
-    } else {
-        Err("osascript failed".to_string())
-    }
-}
-
-#[tauri::command]
 fn update_tray_timer(app: AppHandle, timer_text: String) -> Result<(), String> {
     let tray_handle = app.tray_handle();
+
+    // Update the menu bar title (shows next to icon in menu bar)
+    tray_handle.set_title(&timer_text)
+        .map_err(|e| e.to_string())?;
+
+    // Also update the menu item for consistency
     tray_handle.get_item("timer").set_title(&format!("🧠 {}", timer_text))
         .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
@@ -152,10 +141,20 @@ fn log_check_in(app: AppHandle, log_line: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_current_event() -> Result<Option<String>, String> {
+    calendar::get_current_calendar_event()
+}
+
+#[tauri::command]
+fn request_calendar_permission() -> Result<String, String> {
+    calendar::request_calendar_access()
+}
+
 
 fn main() {
     // Create system tray menu
-    let timer_item = CustomMenuItem::new("timer", "🧠 15:00").disabled();
+    let timer_item = CustomMenuItem::new("timer", "15:00").disabled();
     let show = CustomMenuItem::new("show", "Show Timer");
     let settings_item = CustomMenuItem::new("settings", "Settings");
     let quit = CustomMenuItem::new("quit", "Quit");
@@ -168,22 +167,67 @@ fn main() {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(quit);
 
-    // Use a proper tray icon (18x18 is optimal for macOS menu bar)
     let system_tray = SystemTray::new()
-        .with_icon(Icon::Raw(include_bytes!("../icons/18x18.png").to_vec()))
-        .with_menu(tray_menu);
+        .with_menu(tray_menu)
+        .with_tooltip("Hyper Awareness")
+        .with_menu_on_left_click(false);
 
     tauri::Builder::default()
         .setup(|app| {
-            // PROFESSIONAL APPROACH: Hide dock icon using activation policy
-            // This is more reliable than LSUIElement in Info.plist
+            // Make this a menu bar-only app (no dock icon)
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+            let tray_handle = app.tray_handle();
+
+            // Decode embedded tray icon and apply it at runtime so bundled apps keep the asset
+            let icon_bytes = include_bytes!("../icons/18x18.png");
+            if let Some(icon_image) = ImageReader::new(Cursor::new(icon_bytes))
+                .with_guessed_format()
+                .ok()
+                .and_then(|reader| reader.decode().ok())
+                .map(|img| img.to_rgba8())
+            {
+                let (width, height) = icon_image.dimensions();
+                let icon = tauri::Icon::Rgba {
+                    rgba: icon_image.into_raw(),
+                    width,
+                    height,
+                };
+                match tray_handle.set_icon(icon) {
+                    Ok(_) => eprintln!("Tray icon applied successfully ({}x{}).", width, height),
+                    Err(err) => eprintln!("Failed to set tray icon: {err:?}"),
+                }
+            } else {
+                eprintln!("Failed to decode tray icon; tray will use default appearance.");
+            }
+
+            // Load settings and update tray with correct initial time
+            let settings = load_settings(&app.handle()).unwrap_or_default();
+            let initial_time = format!("{}:00", settings.check_in_interval);
+
+            // Apply template tinting so tray follows system theme (macOS)
+            #[cfg(target_os = "macos")]
+            {
+                match tray_handle.set_icon_as_template(true) {
+                    Ok(_) => eprintln!("Tray icon template mode enabled."),
+                    Err(err) => eprintln!("Failed to enable tray icon template mode: {err:?}"),
+                }
+            }
+            // Update tray menu item title
+            let _ = tray_handle.get_item("timer").set_title(&format!("🧠 {}", initial_time));
 
             Ok(())
         })
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| match event {
+            SystemTrayEvent::LeftClick { .. } => {
+                // Show main window when clicking the tray icon
+                if let Some(window) = app.get_window("main") {
+                    window.show().unwrap();
+                    window.set_focus().unwrap();
+                }
+            }
             SystemTrayEvent::MenuItemClick { id, .. } => {
                 match id.as_str() {
                     "show" => {
@@ -204,7 +248,7 @@ fn main() {
                                 WindowUrl::App("settings.html".into()),
                             )
                             .title("Settings")
-                            .inner_size(400.0, 500.0)
+                            .inner_size(400.0, 430.0)
                             .resizable(false)
                             .build();
                         }
@@ -215,15 +259,11 @@ fn main() {
                     _ => {}
                 }
             }
-            SystemTrayEvent::LeftClick { .. } => {
-                // Show/hide window on left click
+            SystemTrayEvent::DoubleClick { .. } => {
+                // Open main window on double click
                 if let Some(window) = app.get_window("main") {
-                    if window.is_visible().unwrap_or(false) {
-                        window.hide().unwrap();
-                    } else {
-                        window.show().unwrap();
-                        window.set_focus().unwrap();
-                    }
+                    window.show().unwrap();
+                    window.set_focus().unwrap();
                 }
             }
             _ => {}
@@ -231,10 +271,11 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_settings,
             save_settings,
-            switch_desktop,
             open_settings,
             update_tray_timer,
-            log_check_in
+            log_check_in,
+            get_current_event,
+            request_calendar_permission
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
