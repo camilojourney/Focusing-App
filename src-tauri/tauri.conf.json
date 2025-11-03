@@ -54,7 +54,8 @@
     },
     "systemTray": {
       "iconPath": "icons/18x18.png",
-      "iconAsTemplate": true
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
     }
   }
 }

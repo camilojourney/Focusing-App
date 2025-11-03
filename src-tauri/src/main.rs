@@ -4,11 +4,10 @@ mod calendar;
 
 use std::{
     fs::{self, OpenOptions},
-    io::{Cursor, Write},
+    io::Write,
     path::PathBuf,
 };
 
-use image::io::Reader as ImageReader;
 use serde::{Deserialize, Serialize};
 use tauri::{
     api::path::app_config_dir,
@@ -180,40 +179,10 @@ fn main() {
 
             let tray_handle = app.tray_handle();
 
-            // Decode embedded tray icon and apply it at runtime so bundled apps keep the asset
-            let icon_bytes = include_bytes!("../icons/18x18.png");
-            if let Some(icon_image) = ImageReader::new(Cursor::new(icon_bytes))
-                .with_guessed_format()
-                .ok()
-                .and_then(|reader| reader.decode().ok())
-                .map(|img| img.to_rgba8())
-            {
-                let (width, height) = icon_image.dimensions();
-                let icon = tauri::Icon::Rgba {
-                    rgba: icon_image.into_raw(),
-                    width,
-                    height,
-                };
-                match tray_handle.set_icon(icon) {
-                    Ok(_) => eprintln!("Tray icon applied successfully ({}x{}).", width, height),
-                    Err(err) => eprintln!("Failed to set tray icon: {err:?}"),
-                }
-            } else {
-                eprintln!("Failed to decode tray icon; tray will use default appearance.");
-            }
-
             // Load settings and update tray with correct initial time
             let settings = load_settings(&app.handle()).unwrap_or_default();
             let initial_time = format!("{}:00", settings.check_in_interval);
 
-            // Apply template tinting so tray follows system theme (macOS)
-            #[cfg(target_os = "macos")]
-            {
-                match tray_handle.set_icon_as_template(true) {
-                    Ok(_) => eprintln!("Tray icon template mode enabled."),
-                    Err(err) => eprintln!("Failed to enable tray icon template mode: {err:?}"),
-                }
-            }
             // Update tray menu item title
             let _ = tray_handle.get_item("timer").set_title(&format!("🧠 {}", initial_time));
 

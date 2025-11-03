@@ -6,18 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hyper Awareness</title>
     <style>
+        html {
+            background: transparent;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding-top: 50px;
+            /* Account for title bar */
+            /* Dark liquid glass background */
+            background: linear-gradient(135deg,
+                    rgba(20, 20, 30, 0.95) 0%,
+                    rgba(30, 30, 50, 0.95) 50%,
+                    rgba(40, 30, 60, 0.95) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            color: rgba(255, 255, 255, 0.95);
             text-align: center;
-            height: 480px;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            border-radius: 12px;
+            box-sizing: border-box;
+            box-shadow:
+                0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
         }
 
         .status {
@@ -64,20 +79,38 @@
         }
 
         button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
+            /* Liquid glass button */
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.9);
             padding: 12px 24px;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.2s;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 100px;
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow:
+                0 6px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0px);
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         button:disabled {
@@ -114,25 +147,49 @@
             opacity: 0.9;
         }
 
-        .goal-input-container input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+        .goal-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .goal-input-wrapper input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: rgba(255, 255, 255, 0.95);
             font-size: 14px;
+            font-weight: 400;
             box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
-        .goal-input-container input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
+        .goal-input-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
 
-        .goal-input-container input:focus {
+        .goal-input-wrapper input:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .calendar-btn {
+            padding: 12px 16px;
+            white-space: nowrap;
+            font-size: 13px;
+            min-width: auto;
         }
 
         .check-in-screen {
@@ -167,9 +224,15 @@
             font-size: 18px;
             font-weight: 500;
             margin: 10px 0 25px 0;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .check-in-question {
@@ -210,13 +273,20 @@
 
         .notes-input-container input {
             width: 100%;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: rgba(255, 255, 255, 0.95);
             font-size: 13px;
+            font-weight: 400;
             box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .notes-input-container input::placeholder {
@@ -225,8 +295,12 @@
 
         .notes-input-container input:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 3px rgba(255, 255, 255, 0.1);
         }
 
         .countdown-text {
@@ -243,7 +317,10 @@
 
         <div class="goal-input-container">
             <label for="sessionGoal">Your Goal for this Session:</label>
-            <input type="text" id="sessionGoal" placeholder="e.g., Finish chapter 4 of my thesis">
+            <div class="goal-input-wrapper">
+                <input type="text" id="sessionGoal" placeholder="e.g., Finish chapter 4 of my thesis">
+                <button class="calendar-btn" id="calendarBtn">📅 Use Event</button>
+            </div>
         </div>
 
         <div class="status" id="status">Ready to start</div>
@@ -283,34 +360,18 @@
 
         <div class="notes-input-container">
             <label for="checkInNotes">Optional Notes:</label>
-            <input type="text" id="checkInNotes" placeholder="Quick note about what you're working on...">
+            <input type="text" id="checkInNotes" placeholder="More details...">
         </div>
 
         <div class="countdown-text" id="checkInCountdown">Resuming in 20 seconds...</div>
     </div>
 
     <script>
+        const { invoke } = window.__TAURI__.tauri;
+        const { listen } = window.__TAURI__.event;
+        const { appWindow } = window.__TAURI__.window;
+
         console.log('=== SCRIPT LOADED ===');
-
-        // Wait for __TAURI__ to be injected, then set up our API references
-        window.tauriInvoke = null;
-        window.tauriListen = null;
-        window.tauriAppWindow = null;
-
-        // Initialize Tauri APIs when available
-        function initTauriAPIs() {
-            if (window.__TAURI__ && window.__TAURI__.tauri && window.__TAURI__.event && window.__TAURI__.window) {
-                window.tauriInvoke = window.__TAURI__.tauri.invoke;
-                window.tauriListen = window.__TAURI__.event.listen;
-                window.tauriAppWindow = window.__TAURI__.window.appWindow;
-                console.log('Tauri APIs initialized');
-                return true;
-            }
-            return false;
-        }
-
-        // Try to initialize immediately
-        initTauriAPIs();
 
         // Settings (camelCase for frontend; Rust backend renames automatically)
         let settings = {
@@ -329,15 +390,17 @@
         let isSessionRunning = false;
         let isWriting = false;
         let checkInsCompleted = 0;
+        let isUsingCalendarEvent = false; // Track if using calendar event
 
         let sessionInterval = null;
         let checkInInterval = null;
         let writeInterval = null;
+        let calendarRefreshInterval = null; // Auto-refresh calendar
 
         // Load settings on start
         async function loadSettings() {
             try {
-                const loaded = await window.tauriInvoke('get_settings');
+                const loaded = await invoke('get_settings');
                 // Map snake_case from Rust to camelCase for JavaScript
                 settings = {
                     sessionDuration: loaded.session_duration || settings.sessionDuration,
@@ -380,7 +443,7 @@
 
             // Update system tray timer
             try {
-                await window.tauriInvoke('update_tray_timer', { timerText: trayText });
+                await invoke('update_tray_timer', { timerText: trayText });
             } catch (error) {
                 console.error('Failed to update tray timer:', error);
             }
@@ -430,7 +493,7 @@
 
             // Auto-hide window when session starts
             try {
-                await window.tauriAppWindow.hide();
+                await appWindow.hide();
             } catch (error) {
                 console.error('Failed to hide window:', error);
             }
@@ -465,8 +528,8 @@
 
             // Show the window for check-in
             try {
-                await window.tauriAppWindow.show();
-                await window.tauriAppWindow.setFocus();
+                await appWindow.show();
+                await appWindow.setFocus();
             } catch (error) {
                 console.error('Failed to show window:', error);
             }
@@ -534,7 +597,7 @@
             // Log to backend
             console.log('Logging check-in:', logEntry);
             try {
-                await window.tauriInvoke('log_check_in', { logLine: JSON.stringify(logEntry) });
+                await invoke('log_check_in', { logLine: JSON.stringify(logEntry) });
                 console.log('Check-in logged successfully');
             } catch (error) {
                 console.error('Failed to log check-in:', error);
@@ -567,7 +630,7 @@
 
         async function openSettings() {
             try {
-                await window.tauriInvoke('open_settings');
+                await invoke('open_settings');
             } catch (error) {
                 console.error('Failed to open settings:', error);
             }
@@ -579,15 +642,90 @@
             await triggerCheckIn();
         }
 
+        async function useCalendarEvent() {
+            try {
+                console.log('Fetching current calendar event...');
+                const result = await invoke('get_current_event');
+
+                if (result) {
+                    document.getElementById('sessionGoal').value = result;
+                    isUsingCalendarEvent = true;
+                    updateCalendarButtonState();
+                    startCalendarAutoRefresh();
+                    console.log('Calendar event loaded:', result);
+                } else {
+                    alert('No calendar event found for the current time.');
+                }
+            } catch (error) {
+                console.error('Failed to get calendar event:', error);
+                alert(error || 'Failed to access calendar. Please grant calendar permissions when prompted.');
+            }
+        }
+
+        function updateCalendarButtonState() {
+            const btn = document.getElementById('calendarBtn');
+            if (isUsingCalendarEvent) {
+                btn.textContent = '✅ Using Event';
+                btn.style.background = 'rgba(76, 175, 80, 0.2)';
+                btn.style.borderColor = 'rgba(76, 175, 80, 0.4)';
+            } else {
+                btn.textContent = '📅 Use Event';
+                btn.style.background = '';
+                btn.style.borderColor = '';
+            }
+        }
+
+        function startCalendarAutoRefresh() {
+            // Clear existing interval if any
+            if (calendarRefreshInterval) {
+                clearInterval(calendarRefreshInterval);
+            }
+
+            // Refresh every 60 seconds
+            calendarRefreshInterval = setInterval(async () => {
+                if (!isUsingCalendarEvent) return;
+
+                try {
+                    const result = await invoke('get_current_event');
+                    const goalInput = document.getElementById('sessionGoal');
+                    
+                    if (result) {
+                        // Only update if different from current
+                        if (goalInput.value !== result) {
+                            goalInput.value = result;
+                            console.log('Calendar event auto-updated:', result);
+                        }
+                    } else {
+                        // No event found - reset to manual mode
+                        goalInput.value = '';
+                        goalInput.placeholder = 'No current event';
+                        isUsingCalendarEvent = false;
+                        updateCalendarButtonState();
+                        stopCalendarAutoRefresh();
+                        console.log('No calendar event found, switching to manual mode');
+                    }
+                } catch (error) {
+                    console.error('Failed to refresh calendar event:', error);
+                }
+            }, 60000); // 60 seconds
+        }
+
+        function stopCalendarAutoRefresh() {
+            if (calendarRefreshInterval) {
+                clearInterval(calendarRefreshInterval);
+                calendarRefreshInterval = null;
+            }
+        }
+
         // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM Content Loaded - initializing app');
 
-            // Wait for Tauri APIs to be available
-            while (!initTauriAPIs()) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            console.log('Tauri APIs loaded successfully');
+            // Prevent window close - hide instead
+            await appWindow.onCloseRequested(async (event) => {
+                event.preventDefault();
+                await appWindow.hide();
+            });
 
             await loadSettings();
             resetSession();
@@ -597,12 +735,14 @@
             const resetBtn = document.getElementById('resetBtn');
             const settingsBtn = document.getElementById('settingsBtn');
             const testBtn = document.getElementById('testBtn');
+            const calendarBtn = document.getElementById('calendarBtn');
 
             console.log('Button elements found:', {
                 startBtn: !!startBtn,
                 resetBtn: !!resetBtn,
                 settingsBtn: !!settingsBtn,
-                testBtn: !!testBtn
+                testBtn: !!testBtn,
+                calendarBtn: !!calendarBtn
             });
 
             if (startBtn) {
@@ -633,6 +773,24 @@
                 });
             }
 
+            if (calendarBtn) {
+                calendarBtn.addEventListener('click', () => {
+                    console.log('Calendar button clicked');
+                    if (isUsingCalendarEvent) {
+                        // Toggle off calendar mode
+                        isUsingCalendarEvent = false;
+                        updateCalendarButtonState();
+                        stopCalendarAutoRefresh();
+                        document.getElementById('sessionGoal').value = '';
+                        document.getElementById('sessionGoal').placeholder = 'e.g., Finish chapter 4 of my thesis';
+                        console.log('Calendar mode disabled');
+                    } else {
+                        // Toggle on calendar mode
+                        useCalendarEvent();
+                    }
+                });
+            }
+
             console.log('Event listeners added successfully');
 
             // Add event listeners to check-in buttons
@@ -645,7 +803,43 @@
                 });
             });
 
-            const unlisten = await window.tauriListen('settings-updated', (event) => {
+            // Add Enter key support for notes field to save check-in
+            const checkInNotesInput = document.getElementById('checkInNotes');
+            if (checkInNotesInput) {
+                checkInNotesInput.addEventListener('keypress', (event) => {
+                    if (event.key === 'Enter') {
+                        console.log('Enter pressed in notes field - submitting as On Task');
+                        handleCheckInResponse('On Task');
+                    }
+                });
+            }
+
+            // Add Enter key support for session goal input
+            const sessionGoalInput = document.getElementById('sessionGoal');
+            if (sessionGoalInput) {
+                sessionGoalInput.addEventListener('keypress', (event) => {
+                    if (event.key === 'Enter') {
+                        console.log('Enter pressed in goal field - starting session');
+                        if (!isSessionRunning) {
+                            toggleSession();
+                        }
+                    }
+                });
+
+                // Detect manual typing - disable calendar mode
+                sessionGoalInput.addEventListener('input', (event) => {
+                    if (isUsingCalendarEvent && event.inputType) {
+                        // User is manually typing
+                        isUsingCalendarEvent = false;
+                        updateCalendarButtonState();
+                        stopCalendarAutoRefresh();
+                        sessionGoalInput.placeholder = 'e.g., Finish chapter 4 of my thesis';
+                        console.log('Manual input detected - calendar mode disabled');
+                    }
+                });
+            }
+
+            const unlisten = await listen('settings-updated', (event) => {
                 if (event?.payload) {
                     // Map snake_case from Rust to camelCase for JavaScript
                     const payload = event.payload;
@@ -655,8 +849,12 @@
                         writeTime: payload.write_time || settings.writeTime
                     };
 
+                    console.log('Settings updated:', settings);
+
+                    // Always update the timer when settings change and session is not running
                     if (!isSessionRunning && !isWriting) {
                         checkInTimeRemaining = settings.checkInInterval * 60;
+                        console.log('Updated checkInTimeRemaining to:', checkInTimeRemaining);
                     }
 
                     updateDisplay();

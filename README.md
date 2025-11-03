@@ -4,7 +4,7 @@ A macOS menu bar focus timer application designed to help you maintain deep work
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)
-![Tauri](https://img.shields.io/badge/Tauri-v1.5.14-brightgreen.svg)
+![Tauri](https://img.shields.io/badge/Tauri-v1.8.3-brightgreen.svg)
 
 ## Overview
 
@@ -17,11 +17,13 @@ Focus Time is a productivity app that combines long-form focus sessions with per
 - **Session Goal Tracking**: Set your intention at the start of each session
 - **Interactive Check-ins**: Report what you're actually doing at each check-in point
 - **Cognitive Awareness**: See your goal displayed when checking in - creates powerful metacognition
+- **Calendar Integration**: Automatically detects current calendar events to help contextualize your focus
 - **Data Logging**: All check-ins are logged locally to JSONL format for future analysis
 - **Status Tracking**: On Task, Social Media, Email/Chat, Other Distractions, or Taking a Break
 - **Accountability Box**: Answer deep reflection questions and save them to your personal accountability log
 - **Automatic Desktop Switching**: Switches to Desktop 1 on macOS during check-ins for a clean reflection space
-- **Menu Bar Integration**: Always-accessible timer display in your macOS menu bar
+- **Menu Bar Integration**: Beautiful adaptive icon that changes with system theme (white in dark mode, black in light mode)
+- **Menu Bar Timer**: Live countdown display right in your menu bar
 - **Persistent Settings**: Your preferences are saved between sessions
 - **Privacy First**: All data stored locally only - no cloud sync, complete privacy
 
@@ -64,7 +66,8 @@ This app is built with modern, performant technologies:
 
 **Backend**
 - Rust with Tauri framework
-- System tray integration
+- System tray integration with adaptive icon (macOS template image)
+- Calendar access via EventKit (macOS)
 - AppleScript execution for desktop switching
 
 **Build Tools**
@@ -81,12 +84,15 @@ Focusing-App/
 │   └── settings.html        # Settings configuration UI
 ├── src-tauri/               # Rust backend
 │   ├── src/
-│   │   └── main.rs         # Main application logic
-│   ├── icons/              # Application icons
-│   ├── Cargo.toml          # Rust dependencies
-│   └── tauri.conf.json     # Tauri configuration
-├── package.json            # npm configuration
-└── README.md              # This file
+│   │   ├── main.rs          # Main application logic
+│   │   └── calendar.rs      # macOS Calendar integration
+│   ├── icons/               # Application icons
+│   │   └── 18x18.png        # Menu bar icon (template image)
+│   ├── Cargo.toml           # Rust dependencies
+│   ├── tauri.conf.json      # Tauri configuration
+│   └── entitlements.plist   # macOS permissions
+├── package.json             # npm configuration
+└── README.md               # This file
 ```
 
 ## Getting Started
@@ -188,8 +194,10 @@ The Rust backend ([src-tauri/src/main.rs](src-tauri/src/main.rs)) handles:
 - `get_settings()` - Retrieve saved settings
 - `save_settings()` - Persist user preferences
 - `open_settings()` - Launch settings window
-- `switch_desktop()` - Execute desktop switch via AppleScript
-- `update_tray_timer()` - Update menu bar display
+- `log_check_in()` - Save check-in data to JSONL file
+- `get_current_event()` - Get current calendar event from macOS Calendar
+- `request_calendar_permission()` - Request calendar access permission
+- `update_tray_timer()` - Update menu bar timer display
 
 ### Frontend (JavaScript)
 
@@ -223,11 +231,22 @@ Frontend (HTML/JS) <---> Tauri IPC <---> Backend (Rust) <---> System (macOS)
 
 ### macOS
 
-Full functionality including automatic desktop switching via AppleScript.
+Full functionality including:
+- Automatic desktop switching via AppleScript
+- Calendar integration with EventKit for current event detection
+- Adaptive menu bar icon that automatically switches colors with system theme
+- Menu bar timer display
+
+**Calendar Permission**: On first launch, the app will request permission to access your calendar. This allows it to show your current event during focus sessions.
 
 ### Windows/Linux
 
-The app can be compiled for Windows and Linux, but the desktop switching feature uses macOS-specific AppleScript commands. Alternative implementations would be needed for full cross-platform support.
+The app can be compiled for Windows and Linux, but the following features are macOS-specific:
+- Desktop switching (uses AppleScript)
+- Calendar integration (uses EventKit)
+- Adaptive menu bar icon (uses macOS template images)
+
+Alternative implementations would be needed for full cross-platform support.
 
 ## Configuration Files
 
@@ -299,6 +318,47 @@ The Accountability Box stores your reflection answers in JSONL format:
 5. What did you learn?
 
 These questions help you reflect on your work and build self-awareness over time.
+
+## Troubleshooting
+
+### Menu Bar Icon Not Showing
+
+If the brain icon doesn't appear in your menu bar:
+
+1. **Check System Theme Compatibility**: The icon uses macOS template images which adapt to your theme
+2. **Restart the Dock**: Sometimes macOS needs a refresh:
+   ```bash
+   killall Dock
+   ```
+3. **Verify Icon File**: Ensure `src-tauri/icons/18x18.png` exists and is a valid template image:
+   - Pure black (`#000000`) pixels for visible parts
+   - Transparent (alpha = 0) for invisible parts
+   - No anti-aliasing or gray pixels
+
+4. **Check Configuration**: In [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json), verify:
+   ```json
+   "systemTray": {
+     "iconPath": "icons/18x18.png",
+     "iconAsTemplate": true,
+     "menuOnLeftClick": false
+   }
+   ```
+
+### Calendar Permission Issues
+
+If calendar integration isn't working:
+
+1. Open **System Settings > Privacy & Security > Calendars**
+2. Ensure "Hyper Awareness" has permission enabled
+3. If not listed, click the app's "Request Permission" button
+
+### Build Errors
+
+If you encounter build errors:
+
+1. **Update Rust**: `rustup update`
+2. **Clean build**: `cargo clean` in `src-tauri/`
+3. **Reinstall dependencies**: `npm install`
 
 ## Development
 
