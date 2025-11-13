@@ -1,11 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod calendar;
+mod logs;
 
 use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
+    sync::Mutex,
 };
 
 use serde::{Deserialize, Serialize};
@@ -14,6 +16,7 @@ use tauri::{
     AppHandle,
     CustomMenuItem,
     Manager,
+    PhysicalPosition,
     SystemTray,
     SystemTrayEvent,
     SystemTrayMenu,
@@ -22,11 +25,24 @@ use tauri::{
     WindowUrl,
 };
 
+// Store the last known tray icon position
+struct TrayPosition {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+struct AppState {
+    tray_position: Mutex<Option<TrayPosition>>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Settings {
     session_duration: u32,
     check_in_interval: u32,
     write_time: u32,
+    window_position: String, // "auto" or "right-edge"
 }
 
 impl Default for Settings {
@@ -34,7 +50,8 @@ impl Default for Settings {
         Self {
             session_duration: 720,
             check_in_interval: 15,
-            write_time: 25,
+            write_time: 20,
+            window_position: "auto".to_string(),
         }
     }
 }
@@ -123,6 +140,60 @@ fn update_tray_timer(app: AppHandle, timer_text: String) -> Result<(), String> {
     Ok(())
 }
 
+fn calculate_window_position(settings: &Settings, monitor_size: &tauri::PhysicalSize<u32>) -> (i32, i32) {
+    let window_width = 380;
+    let y = 50; // Just below menu bar with some padding
+
+    let x = match settings.window_position.as_str() {
+        "right-edge" => {
+            // Position with right edge near screen edge (with 20px padding for safety)
+            (monitor_size.width as i32) - window_width - 20
+        },
+        _ => {
+            // Default "auto" - position closer to where menu bar icons typically are
+            // Menu bar icons are usually in the rightmost ~300px area
+            // Center the window around that area
+            let from_right = 250; // Distance from right edge to center of window
+            (monitor_size.width as i32) - from_right - (window_width / 2)
+        }
+    };
+
+    (x, y)
+}
+
+#[tauri::command]
+fn position_window_at_top(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_window("main") {
+        // Try to get the stored tray position
+        let state = app.state::<AppState>();
+        let tray_pos = state.tray_position.lock().unwrap();
+
+        if let Some(pos) = tray_pos.as_ref() {
+            // Use stored tray icon position
+            let window_width = 380;
+            let icon_center_x = pos.x + (pos.width / 2.0);
+            let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
+            let window_y = (pos.y + pos.height + 5.0) as i32;
+
+            window.set_position(tauri::Position::Physical(PhysicalPosition {
+                x: window_x,
+                y: window_y
+            }))
+            .map_err(|e| e.to_string())?;
+        } else {
+            // Fallback to old positioning if we don't have tray position yet
+            let settings = load_settings(&app).unwrap_or_default();
+            if let Ok(Some(monitor)) = window.current_monitor() {
+                let monitor_size = monitor.size();
+                let (x, y) = calculate_window_position(&settings, &monitor_size);
+                window.set_position(tauri::Position::Physical(PhysicalPosition { x, y }))
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn log_check_in(app: AppHandle, log_line: String) -> Result<(), String> {
     let path = log_file_path(&app)?;
@@ -150,6 +221,19 @@ fn request_calendar_permission() -> Result<String, String> {
     calendar::request_calendar_access()
 }
 
+#[tauri::command]
+fn list_session_entries(app: AppHandle, start_time_iso: String) -> Result<Vec<logs::SessionEntry>, String> {
+    use chrono::DateTime;
+
+    // Parse the ISO timestamp
+    let start_time = DateTime::parse_from_rfc3339(&start_time_iso)
+        .map_err(|e| format!("Invalid timestamp format: {}", e))?
+        .with_timezone(&chrono::Utc);
+
+    // Read entries since start time
+    logs::read_since(&app, start_time)
+}
+
 
 fn main() {
     // Create system tray menu
@@ -172,6 +256,9 @@ fn main() {
         .with_menu_on_left_click(false);
 
     tauri::Builder::default()
+        .manage(AppState {
+            tray_position: Mutex::new(None),
+        })
         .setup(|app| {
             // Make this a menu bar-only app (no dock icon)
             #[cfg(target_os = "macos")]
@@ -186,13 +273,39 @@ fn main() {
             // Update tray menu item title
             let _ = tray_handle.get_item("timer").set_title(&format!("🧠 {}", initial_time));
 
+            // Hide main window initially
+            if let Some(window) = app.get_window("main") {
+                let _ = window.hide();
+            }
+
             Ok(())
         })
         .system_tray(system_tray)
         .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::LeftClick { .. } => {
+            SystemTrayEvent::LeftClick { position, size, .. } => {
+                // Store the tray position for later use
+                let state = app.state::<AppState>();
+                let mut tray_pos = state.tray_position.lock().unwrap();
+                *tray_pos = Some(TrayPosition {
+                    x: position.x,
+                    y: position.y,
+                    width: size.width as f64,
+                    height: size.height as f64,
+                });
+                drop(tray_pos); // Release lock before showing window
+
                 // Show main window when clicking the tray icon
                 if let Some(window) = app.get_window("main") {
+                    // Position window directly below the tray icon
+                    let window_width = 380;
+                    let icon_center_x = position.x + (size.width as f64 / 2.0);
+                    let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
+                    let window_y = (position.y + size.height as f64 + 5.0) as i32; // 5px gap below icon
+
+                    let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
+                        x: window_x,
+                        y: window_y
+                    }));
                     window.show().unwrap();
                     window.set_focus().unwrap();
                 }
@@ -201,6 +314,29 @@ fn main() {
                 match id.as_str() {
                     "show" => {
                         if let Some(window) = app.get_window("main") {
+                            // Try to use stored tray position
+                            let state = app.state::<AppState>();
+                            let tray_pos = state.tray_position.lock().unwrap();
+
+                            if let Some(pos) = tray_pos.as_ref() {
+                                let window_width = 380;
+                                let icon_center_x = pos.x + (pos.width / 2.0);
+                                let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
+                                let window_y = (pos.y + pos.height + 5.0) as i32;
+
+                                let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
+                                    x: window_x,
+                                    y: window_y
+                                }));
+                            } else {
+                                // Fallback to settings-based positioning
+                                let settings = load_settings(app).unwrap_or_default();
+                                if let Ok(Some(monitor)) = window.current_monitor() {
+                                    let monitor_size = monitor.size();
+                                    let (x, y) = calculate_window_position(&settings, &monitor_size);
+                                    let _ = window.set_position(tauri::Position::Physical(PhysicalPosition { x, y }));
+                                }
+                            }
                             window.show().unwrap();
                             window.set_focus().unwrap();
                         }
@@ -228,9 +364,30 @@ fn main() {
                     _ => {}
                 }
             }
-            SystemTrayEvent::DoubleClick { .. } => {
+            SystemTrayEvent::DoubleClick { position, size, .. } => {
+                // Store the tray position
+                let state = app.state::<AppState>();
+                let mut tray_pos = state.tray_position.lock().unwrap();
+                *tray_pos = Some(TrayPosition {
+                    x: position.x,
+                    y: position.y,
+                    width: size.width as f64,
+                    height: size.height as f64,
+                });
+                drop(tray_pos);
+
                 // Open main window on double click
                 if let Some(window) = app.get_window("main") {
+                    // Position window directly below the tray icon
+                    let window_width = 380;
+                    let icon_center_x = position.x + (size.width as f64 / 2.0);
+                    let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
+                    let window_y = (position.y + size.height as f64 + 5.0) as i32; // 5px gap below icon
+
+                    let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
+                        x: window_x,
+                        y: window_y
+                    }));
                     window.show().unwrap();
                     window.set_focus().unwrap();
                 }
@@ -242,9 +399,11 @@ fn main() {
             save_settings,
             open_settings,
             update_tray_timer,
+            position_window_at_top,
             log_check_in,
             get_current_event,
-            request_calendar_permission
+            request_calendar_permission,
+            list_session_entries
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
