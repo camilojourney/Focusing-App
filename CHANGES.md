@@ -117,7 +117,7 @@ async function testCheckIn() {
 
 ```bash
 # 1. Run the app
-npm run dev
+pnpm run dev
 
 # 2. In the app:
 # - Enter goal: "Testing check-in feature"
@@ -151,7 +151,7 @@ cat ~/Library/Application\ Support/com.focustime.app/focus_log.jsonl
 
 2. **Run the app**:
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 3. **Test the check-in**:

@@ -19,7 +19,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 image = { version = "0.24", default-features = false, features = ["png"] }
-tauri = { version = "1", features = [ "system-tray",
+tauri = { version = "1", features = [ "macos-private-api", "system-tray",
   "api-all",
   "icon-png",
 ] }

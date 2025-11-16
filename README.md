@@ -128,12 +128,12 @@ Focusing-App/
 
 3. Install npm dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
 4. Run in development mode:
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
    **Note:** If you get a "cargo not found" error, make sure to run:
@@ -143,7 +143,7 @@ Focusing-App/
 
 5. Build for production:
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 The compiled application will be available in `src-tauri/target/release/bundle/`.
@@ -358,14 +358,14 @@ If you encounter build errors:
 
 1. **Update Rust**: `rustup update`
 2. **Clean build**: `cargo clean` in `src-tauri/`
-3. **Reinstall dependencies**: `npm install`
+3. **Reinstall dependencies**: `pnpm install`
 
 ## Development
 
 ### Hot Reload Development
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This starts the Tauri development server with hot reload for both frontend and backend changes.
@@ -373,7 +373,7 @@ This starts the Tauri development server with hot reload for both frontend and b
 ### Building for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 Creates an optimized production bundle in `src-tauri/target/release/bundle/`.

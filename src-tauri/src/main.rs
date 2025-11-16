@@ -29,7 +29,7 @@ use tauri::{
 struct TrayPosition {
     x: f64,
     y: f64,
-    width: f64,
+    _width: f64,
     height: f64,
 }
 
@@ -170,10 +170,11 @@ fn position_window_at_top(app: AppHandle) -> Result<(), String> {
 
         if let Some(pos) = tray_pos.as_ref() {
             // Use stored tray icon position
-            let window_width = 380;
-            let icon_center_x = pos.x + (pos.width / 2.0);
-            let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
-            let window_y = (pos.y + pos.height + 5.0) as i32;
+            let window_width = 380.0;
+            let icon_width = 22.0;
+            let icon_center_x = pos.x + (icon_width / 2.0);
+            let window_x = (icon_center_x - (window_width / 2.0)).round() as i32;
+            let window_y = (pos.y + pos.height + 5.0).round() as i32;
 
             window.set_position(tauri::Position::Physical(PhysicalPosition {
                 x: window_x,
@@ -275,6 +276,17 @@ fn main() {
 
             // Hide main window initially
             if let Some(window) = app.get_window("main") {
+                // Disable window shadow on macOS to prevent white border
+                #[cfg(target_os = "macos")]
+                {
+                    use cocoa::appkit::NSWindow;
+                    use cocoa::base::{id, NO};
+
+                    let ns_window = window.ns_window().unwrap() as id;
+                    unsafe {
+                        ns_window.setHasShadow_(NO);
+                    }
+                }
                 let _ = window.hide();
             }
 
@@ -289,25 +301,35 @@ fn main() {
                 *tray_pos = Some(TrayPosition {
                     x: position.x,
                     y: position.y,
-                    width: size.width as f64,
+                    _width: size.width as f64,
                     height: size.height as f64,
                 });
                 drop(tray_pos); // Release lock before showing window
 
-                // Show main window when clicking the tray icon
+                // Toggle window visibility when clicking the tray icon
                 if let Some(window) = app.get_window("main") {
-                    // Position window directly below the tray icon
-                    let window_width = 380;
-                    let icon_center_x = position.x + (size.width as f64 / 2.0);
-                    let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
-                    let window_y = (position.y + size.height as f64 + 5.0) as i32; // 5px gap below icon
+                    if window.is_visible().unwrap_or(false) {
+                        // Window is visible, hide it
+                        let _ = window.hide();
+                    } else {
+                        // Window is hidden, show it
+                        // Position window directly below the tray icon
+                        let window_width = 380.0;
+                        let icon_width = 22.0; // Standard macOS menu bar icon width
 
-                    let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
-                        x: window_x,
-                        y: window_y
-                    }));
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
+                        // position.x is the left edge of the ENTIRE status item (icon + text)
+                        // We want to center under just the icon, which is at the left
+                        let icon_center_x = position.x + (icon_width / 2.0);
+                        let window_x = (icon_center_x - (window_width / 2.0)).round() as i32;
+                        let window_y = (position.y + size.height as f64 + 5.0).round() as i32;
+
+                        let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
+                            x: window_x,
+                            y: window_y
+                        }));
+                        window.show().unwrap();
+                        window.set_focus().unwrap();
+                    }
                 }
             }
             SystemTrayEvent::MenuItemClick { id, .. } => {
@@ -319,10 +341,11 @@ fn main() {
                             let tray_pos = state.tray_position.lock().unwrap();
 
                             if let Some(pos) = tray_pos.as_ref() {
-                                let window_width = 380;
-                                let icon_center_x = pos.x + (pos.width / 2.0);
-                                let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
-                                let window_y = (pos.y + pos.height + 5.0) as i32;
+                                let window_width = 380.0;
+                                let icon_width = 22.0;
+                                let icon_center_x = pos.x + (icon_width / 2.0);
+                                let window_x = (icon_center_x - (window_width / 2.0)).round() as i32;
+                                let window_y = (pos.y + pos.height + 5.0).round() as i32;
 
                                 let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
                                     x: window_x,
@@ -371,7 +394,7 @@ fn main() {
                 *tray_pos = Some(TrayPosition {
                     x: position.x,
                     y: position.y,
-                    width: size.width as f64,
+                    _width: size.width as f64,
                     height: size.height as f64,
                 });
                 drop(tray_pos);
@@ -379,10 +402,11 @@ fn main() {
                 // Open main window on double click
                 if let Some(window) = app.get_window("main") {
                     // Position window directly below the tray icon
-                    let window_width = 380;
-                    let icon_center_x = position.x + (size.width as f64 / 2.0);
-                    let window_x = (icon_center_x - (window_width as f64 / 2.0)) as i32;
-                    let window_y = (position.y + size.height as f64 + 5.0) as i32; // 5px gap below icon
+                    let window_width = 380.0;
+                    let icon_width = 22.0;
+                    let icon_center_x = position.x + (icon_width / 2.0);
+                    let window_x = (icon_center_x - (window_width / 2.0)).round() as i32;
+                    let window_y = (position.y + size.height as f64 + 5.0).round() as i32;
 
                     let _ = window.set_position(tauri::Position::Physical(PhysicalPosition {
                         x: window_x,

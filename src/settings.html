@@ -61,7 +61,7 @@
             grid-row: 1;
         }
 
-        input {
+        input, select {
             padding: 8px 12px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
@@ -81,11 +81,22 @@
             width: 90px;
         }
 
+        select {
+            width: auto;
+            min-width: 200px;
+            cursor: pointer;
+        }
+
+        select option {
+            background: rgb(30, 30, 50);
+            color: rgba(255, 255, 255, 0.95);
+        }
+
         input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
 
-        input:focus {
+        input:focus, select:focus {
             background: rgba(255, 255, 255, 0.12);
             border-color: rgba(255, 255, 255, 0.4);
             box-shadow:
@@ -229,6 +240,15 @@
             <div class="description">How long you have to respond to check-in before auto-continuing (default: 25 seconds)</div>
         </div>
 
+        <div class="setting-item">
+            <label for="windowPosition">Window Position</label>
+            <select id="windowPosition">
+                <option value="auto">Auto (Near menu bar icon)</option>
+                <option value="right-edge">Right Edge (Touching screen edge)</option>
+            </select>
+            <div class="description">Where the window appears when opened (default: Auto)</div>
+        </div>
+
         <div class="button-group">
             <button onclick="resetToDefaults()">Reset to Defaults</button>
         </div>
@@ -258,6 +278,7 @@
                 document.getElementById('sessionDuration').value = settings.session_duration;
                 document.getElementById('checkInInterval').value = settings.check_in_interval;
                 document.getElementById('writeTime').value = settings.write_time;
+                document.getElementById('windowPosition').value = settings.window_position || 'auto';
             } catch (error) {
                 console.error('Failed to load settings:', error);
             }
@@ -267,7 +288,8 @@
             const settings = {
                 session_duration: parseInt(document.getElementById('sessionDuration').value, 10) || 720,
                 check_in_interval: parseInt(document.getElementById('checkInInterval').value, 10) || 15,
-                write_time: parseInt(document.getElementById('writeTime').value, 10) || 25
+                write_time: parseInt(document.getElementById('writeTime').value, 10) || 25,
+                window_position: document.getElementById('windowPosition').value || 'auto'
             };
 
             try {
@@ -290,12 +312,14 @@
             document.getElementById('sessionDuration').value = 720;
             document.getElementById('checkInInterval').value = 15;
             document.getElementById('writeTime').value = 25;
+            document.getElementById('windowPosition').value = 'auto';
 
             // Save the defaults
             const settings = {
                 session_duration: 720,
                 check_in_interval: 15,
-                write_time: 25
+                write_time: 25,
+                window_position: 'auto'
             };
 
             try {

@@ -14,6 +14,7 @@
     "allowlist": {
       "all": true
     },
+    "macOSPrivateApi": true,
     "bundle": {
       "active": true,
       "identifier": "com.focustime.app",
@@ -23,7 +24,9 @@
         "icons/icon.ico",
         "icons/icon.png"
       ],
-      "resources": ["icons/18x18.png"],
+      "resources": [
+        "icons/18x18.png"
+      ],
       "macOS": {
         "minimumSystemVersion": "10.13",
         "exceptionDomain": "",
@@ -38,15 +41,16 @@
         "title": "Hyper Awareness",
         "width": 380,
         "height": 580,
-        "center": true,
+        "center": false,
+        "x": 30,
+        "y": 30,
         "resizable": false,
         "fullscreen": false,
-        "decorations": true,
+        "decorations": false,
         "visible": true,
         "skipTaskbar": true,
-        "alwaysOnTop": false,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "alwaysOnTop": true,
+        "transparent": true
       }
     ],
     "security": {
