@@ -1,1 +1,1 @@
-{}
+{"app-core-access":{"identifier":"app-core-access","description":"Allows main UI windows to use core APIs and events.","local":true,"windows":["main","settings"],"permissions":["core:default","core:event:default","core:event:allow-listen","core:event:allow-emit"]}}

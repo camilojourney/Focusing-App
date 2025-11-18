@@ -5,7 +5,7 @@ use std::{
     io::{BufRead, BufReader},
     path::PathBuf,
 };
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 /// Internal log entry structure (matches JSONL format)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,8 +62,7 @@ pub fn read_since(app: &AppHandle, start: DateTime<Utc>) -> Result<Vec<SessionEn
         return Ok(Vec::new());
     }
 
-    let file = File::open(&log_path)
-        .map_err(|e| format!("Failed to open log file: {}", e))?;
+    let file = File::open(&log_path).map_err(|e| format!("Failed to open log file: {}", e))?;
 
     let reader = BufReader::new(file);
     let mut entries = Vec::new();
@@ -95,11 +94,7 @@ pub fn read_since(app: &AppHandle, start: DateTime<Utc>) -> Result<Vec<SessionEn
         let entry_time = match DateTime::parse_from_rfc3339(&log_entry.timestamp) {
             Ok(dt) => dt.with_timezone(&Utc),
             Err(e) => {
-                eprintln!(
-                    "Failed to parse timestamp on line {}: {}",
-                    line_num + 1,
-                    e
-                );
+                eprintln!("Failed to parse timestamp on line {}: {}", line_num + 1, e);
                 continue; // Skip entries with invalid timestamps
             }
         };
@@ -118,9 +113,7 @@ pub fn read_since(app: &AppHandle, start: DateTime<Utc>) -> Result<Vec<SessionEn
 
 /// Helper to get log file path (reuse from main.rs)
 fn log_file_path(app: &AppHandle) -> Result<PathBuf, String> {
-    use tauri::api::path::app_config_dir;
-    let mut path = app_config_dir(&app.config())
-        .ok_or("Unable to determine app config directory")?;
+    let mut path = app.path().app_config_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&path).map_err(|e| e.to_string())?;
     path.push("focus_log.jsonl");
     Ok(path)
@@ -132,18 +125,12 @@ mod tests {
 
     #[test]
     fn test_status_to_label() {
-        assert_eq!(
-            SessionEntry::status_to_label("On Task"),
-            "✅ On Task"
-        );
+        assert_eq!(SessionEntry::status_to_label("On Task"), "✅ On Task");
         assert_eq!(
             SessionEntry::status_to_label("Social Media"),
             "📱 Social Media"
         );
-        assert_eq!(
-            SessionEntry::status_to_label("Unknown"),
-            "Unknown"
-        );
+        assert_eq!(SessionEntry::status_to_label("Unknown"), "Unknown");
     }
 
     #[test]

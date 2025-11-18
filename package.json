@@ -9,9 +9,9 @@
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "@tauri-apps/cli": "^1.5.14"
+    "@tauri-apps/cli": "^2.0.0"
   },
   "dependencies": {
-    "@tauri-apps/api": "^1.5.3"
+    "@tauri-apps/api": "^2.0.0"
   }
 }

@@ -260,9 +260,32 @@
     </div>
 
     <script>
-        const { invoke } = window.__TAURI__.tauri;
-        const { appWindow } = window.__TAURI__.window;
-        const { emit } = window.__TAURI__.event;
+        // Use global Tauri object (withGlobalTauri: true in config)
+        console.log('Settings: window.__TAURI__ available?', typeof window.__TAURI__);
+
+        let invoke, emit, appWindow;
+
+        try {
+            if (window.__TAURI__) {
+                invoke = window.__TAURI__.core?.invoke || window.__TAURI__.tauri?.invoke;
+                emit = window.__TAURI__.event?.emit;
+
+                // Try different ways to get window
+                if (window.__TAURI__.webviewWindow) {
+                    const { WebviewWindow } = window.__TAURI__.webviewWindow;
+                    appWindow = WebviewWindow.getCurrent();
+                } else if (window.__TAURI__.window) {
+                    const { getCurrent } = window.__TAURI__.window;
+                    appWindow = getCurrent();
+                }
+
+                console.log('Settings: Tauri APIs loaded:', { invoke: !!invoke, emit: !!emit, appWindow: !!appWindow });
+            } else {
+                console.error('Settings: window.__TAURI__ is not available!');
+            }
+        } catch (error) {
+            console.error('Settings: Error loading Tauri APIs:', error);
+        }
 
         // Load current settings
         window.addEventListener('DOMContentLoaded', async () => {
@@ -284,7 +307,7 @@
             }
         });
 
-        async function saveSettings() {
+        window.saveSettings = async function() {
             const settings = {
                 session_duration: parseInt(document.getElementById('sessionDuration').value, 10) || 720,
                 check_in_interval: parseInt(document.getElementById('checkInInterval').value, 10) || 15,
@@ -303,11 +326,11 @@
             }
         }
 
-        async function cancel() {
+        window.cancel = async function() {
             await appWindow.close();
         }
 
-        async function resetToDefaults() {
+        window.resetToDefaults = async function() {
             // Set default values
             document.getElementById('sessionDuration').value = 720;
             document.getElementById('checkInInterval').value = 15;

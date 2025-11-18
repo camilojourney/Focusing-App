@@ -2,68 +2,16 @@
 
 This document captures the non-negotiable rules for the Focus Time menu bar application. Treat these guidelines as law—feature specs may extend them, but never contradict them.
 
-## 0. Quick Start: Understanding the Project
-
-### What This App Does
-A macOS menu bar timer that helps you maintain focus through:
-- **Timed sessions** (default 12 hours) with periodic check-ins (every 15 min)
-- **Accountability prompts** where you write what you're doing
-- **Session review** showing your focus patterns
-- **Calendar integration** to pull current meeting as focus goal
-
-### How It Works (30-Second Overview)
-
-```
-Menu Bar (🧠 15:00) → Click → Window Appears → [Start Session]
-     ↓                                              ↓
-Timer counts down                          Check-in every 15min
-     ↓                                              ↓
-Updates menu bar         →              "What are you doing now?"
-     ↓                                              ↓
-Logs to JSONL file      ←              Stores your response
-     ↓
-[Review] button → Shows session timeline with all check-ins
-```
-
-### Tech Stack at a Glance
-
-- **Tauri 2** - Rust + JavaScript hybrid framework (like Electron, but faster)
-- **Rust backend** - Handles system integration, file I/O, calendar access
-- **Vanilla JS frontend** - Simple HTML/CSS/JS (no frameworks!)
-- **macOS native APIs** - Direct integration with menu bar, calendar, etc.
-
-### File Structure You Need to Know
-
-```
-src/
-  ├── index.html          ← Main window (timer, buttons, logic)
-  └── settings.html       ← Settings window
-
-src-tauri/src/
-  ├── main.rs            ← Tray icon, window management, Tauri commands
-  ├── calendar.rs        ← macOS Calendar access (EventKit)
-  └── logs.rs            ← JSONL logging and reading
-
-specs/
-  └── 006-menu-bar-integration.md  ← KEY SPEC: Read this to understand behavior
-```
-
 ## 1. Mission & Persona
 - Build a distraction-free macOS focus companion that feels premium, calm, and privacy-first.
 - Keep tone confident and intentional. Favor clear copy over cutesy humor.
 
 ## 2. Immutable Tech Stack
-- **Shell:** Tauri `2.x` targeting macOS menu bar apps (Rust 2021 + JavaScript frontend).
+- **Shell:** Tauri `1.x` targeting macOS menu bar apps (Rust 2021 + JavaScript frontend).
 - **Frontend:** Vanilla HTML/CSS/JavaScript authored in `src/`. No React, Vue, bundlers, or CSS frameworks unless a spec explicitly allows an incremental library.
 - **Backend:** Rust commands in `src-tauri/src/*.rs`, exposed via `tauri::command`. Use `Result<T, String>` for UI-safe error propagation.
-- **Storage:** Local JSON or JSONL files inside Tauri's app config directory (see `src-tauri/src/main.rs:log_check_in`). Never write outside this sandbox or introduce network sync without executive approval.
+- **Storage:** Local JSON or JSONL files inside Tauri’s app config directory (see `src-tauri/src/main.rs:log_check_in`). Never write outside this sandbox or introduce network sync without executive approval.
 - **Tooling:** `pnpm run dev` / `pnpm run build` (Tauri CLI) and `cargo` for Rust. Python 3.11+ scripts may live under project root for offline analysis only.
-
-### Tauri 2 Specific Requirements
-- **Window Focus:** Use `ActivationPolicy::Regular` (not `Accessory`) for interactive windows. See `specs/006-menu-bar-integration.md` section 12 for why.
-- **DevTools:** Requires `"withGlobalTauri": true` in `tauri.conf.json` to enable right-click inspect.
-- **Menu Bar Apps:** Trade-off between `skipTaskbar` (no Dock icon) vs window focus (buttons work). Currently using `skipTaskbar: false` for functionality.
-- **Event Handlers:** Use `get_webview_window()` instead of deprecated `get_window()` in Tauri 2.
 
 ## 3. Coding Guidelines
 ### Frontend (HTML/JS/CSS)

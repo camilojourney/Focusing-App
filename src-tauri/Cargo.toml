@@ -6,23 +6,15 @@ authors = ["Your Name"]
 license = "MIT"
 edition = "2021"
 
-[features]
-default = ["custom-protocol", "system-tray"]
-custom-protocol = ["tauri/custom-protocol"]
-system-tray = ["tauri/system-tray"]
-
 [build-dependencies]
-tauri-build = { version = "1", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
-image = { version = "0.24", default-features = false, features = ["png"] }
-tauri = { version = "1", features = [ "macos-private-api", "system-tray",
-  "api-all",
-  "icon-png",
-] }
+tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-shell = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.25"

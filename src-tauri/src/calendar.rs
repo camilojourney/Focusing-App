@@ -4,9 +4,9 @@
 // output clean without touching the macro crate.
 
 #[cfg(target_os = "macos")]
-use objc::{class, msg_send, sel, sel_impl};
-#[cfg(target_os = "macos")]
 use cocoa::base::{id, nil};
+#[cfg(target_os = "macos")]
+use objc::{class, msg_send, sel, sel_impl};
 #[cfg(target_os = "macos")]
 use std::os::raw::c_char;
 #[cfg(target_os = "macos")]
@@ -114,7 +114,10 @@ pub fn get_current_calendar_event() -> Result<Option<String>, String> {
             let end_comparison: i64 = msg_send![event_end, compare: now];
             let ends_after_now: bool = end_comparison != -1; // NSOrderedAscending = -1
 
-            println!("  Start comparison: {}, Ends after: {}", start_comparison, ends_after_now);
+            println!(
+                "  Start comparison: {}, Ends after: {}",
+                start_comparison, ends_after_now
+            );
 
             if starts_before_now && ends_after_now {
                 // This event is happening now!

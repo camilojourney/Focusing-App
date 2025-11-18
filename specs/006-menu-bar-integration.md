@@ -486,3 +486,221 @@ killall Dock
 - Use Python script to generate icon programmatically
 - Never use Photoshop/GIMP anti-aliasing for macOS tray icons
 - Validate PNG with pixel checker before building
+
+
+## Menu bar behavior
+1. When I click the right mouse button on the menu bar icon, it shows the tray menu with timer, Show, Settings, and Quit options.
+2. When I click the left mouse button on the menu bar icon, it opens the main application window.
+3. When the window is open, and I click the left mouse button on the menu bar icon, it should close the window.
+
+## 12. Tauri 2 Implementation Notes (2025-11-17)
+
+### Architecture Overview: How Everything Connects
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    macOS Menu Bar                        │
+│  ┌──────────┐                                           │
+│  │  🧠 15:00 │  ← Tray Icon with Timer Title           │
+│  └──────────┘                                           │
+└───────────────────────────────┬─────────────────────────┘
+                                │
+                    ┌───────────┴───────────┐
+                    │   Click Events        │
+                    └───────────┬───────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+   Left Click              Right Click          Double Click
+        │                       │                       │
+        ▼                       ▼                       ▼
+  Toggle Window           Show Menu               Quit App
+        │                       │
+        │                   ┌───┴────┐
+        │                   │ • Show  │
+        │                   │ • Settings
+        │                   │ • Quit  │
+        │                   └────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│     Main Window (index.html)         │
+│  ┌─────────────────────────────┐   │
+│  │  Timer: 15:00                │   │
+│  │  [Start Session] [Reset]    │   │ ← Buttons need focus!
+│  │  [Settings] [Review]         │   │
+│  └─────────────────────────────┘   │
+└─────────────────────────────────────┘
+```
+
+### The Focus Problem & Solution
+
+**Why Buttons Don't Work (Tauri 2 Specific Issue):**
+
+In Tauri 2, macOS apps have an "activation policy" that controls how they behave:
+
+1. **`ActivationPolicy::Accessory`** (Menu bar only)
+   - ✅ App stays in menu bar only (no Dock icon)
+   - ❌ **Windows cannot become "key window"** (can't receive clicks!)
+   - ❌ Buttons, inputs, any interaction = broken
+   - Use case: Purely passive display apps (clocks, indicators)
+
+2. **`ActivationPolicy::Regular`** (Normal app)
+   - ✅ Windows can become "key window" (clicks work!)
+   - ✅ Buttons, inputs, all interactions work
+   - ⚠️ App appears in Dock by default
+   - Use case: Interactive apps that need user input
+
+3. **`ActivationPolicy::Regular` + `skipTaskbar: false`**
+   - ✅ Windows get focus properly
+   - ✅ All interactions work
+   - ⚠️ Shows in Dock (trade-off for functionality)
+   - **Current solution for Tauri 2**
+
+### Why We Changed Configuration
+
+**Original (Broken):**
+```rust
+// main.rs line ~305
+app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+```
+```json
+// tauri.conf.json
+"skipTaskbar": true
+```
+**Result:** Menu bar only app, but buttons don't work! 🐛
+
+**Current (Working):**
+```rust
+// main.rs line ~305
+app.set_activation_policy(tauri::ActivationPolicy::Regular);
+```
+```json
+// tauri.conf.json
+"skipTaskbar": false  // Temporarily disabled for functionality
+```
+**Result:** App works fully, shows in Dock temporarily 🎯
+
+### File Connection Map
+
+Here's how different files work together:
+
+```
+src-tauri/src/main.rs
+├─ Line 17-20: Import Tauri APIs (Menu, TrayIcon, Window)
+├─ Line 40-80: Settings management (loads check-in intervals)
+├─ Line 130-160: Window positioning logic (positions below tray icon)
+├─ Line 280-290: Menu creation (Show, Settings, Quit)
+├─ Line 305: **ActivationPolicy** (controls focus capability)
+├─ Line 320-335: Tray icon setup (.title() for timer display)
+└─ Line 340-380: Click handlers (left/right/double-click logic)
+        │
+        └──> Calls window.show()/hide()
+                    │
+                    ▼
+src/index.html
+├─ Line 1-100: CSS styling (glassmorphic design)
+├─ Line 400-500: Button HTML (Start, Reset, Settings)
+├─ Line 700-800: DOM references (getElementById for buttons)
+├─ Line 1000-1100: Timer logic (countdown, updates tray)
+├─ Line 1200-1300: Session management (start/pause/reset)
+└─ Line 1400-1500: Event listeners (button.addEventListener)
+        │
+        └──> Calls invoke('tauri_command')
+                    │
+                    ▼
+        Back to main.rs Tauri commands
+```
+
+### Critical Dependencies
+
+**For Buttons to Work:**
+1. ✅ `ActivationPolicy::Regular` (allows window focus)
+2. ✅ `withGlobalTauri: true` (enables Tauri APIs in webview)
+3. ✅ `skipTaskbar: false` (allows proper focus in Tauri 2)
+4. ✅ `window.show() + window.set_focus()` (activates window)
+
+**For Menu Bar Timer:**
+1. ✅ `TrayIconBuilder::with_id("main")` (creates tray)
+2. ✅ `.title(&initial_time)` (sets timer text)
+3. ✅ `invoke('update_tray_timer')` (updates every second)
+4. ✅ `tray.set_title(Some(&timer_text))` (updates display)
+
+**For Click Events:**
+1. ✅ `.on_tray_icon_event()` (handles tray clicks)
+2. ✅ `TrayIconEvent::Click` (detects left/right/double)
+3. ✅ `MouseButton::Left/Right` (distinguishes buttons)
+4. ✅ `MouseButtonState::Up` (prevents duplicate events)
+
+### Known Limitations (Tauri 2)
+
+1. **Dock Icon Trade-off**
+   - To get working buttons, we need `ActivationPolicy::Regular`
+   - With Regular policy, `skipTaskbar: true` doesn't hide Dock icon reliably
+   - **Workaround**: Accept Dock icon, or explore Tauri 2 native hiding APIs
+
+2. **Double-Click Events**
+   - Click events sometimes fire twice (both Down and Up states)
+   - **Fix**: Only handle `MouseButtonState::Up`
+   - Still seeing duplicates? May be Tauri 2 event bubbling issue
+
+3. **Window Focus Timing**
+   - Window needs explicit `set_focus()` after `show()`
+   - macOS sometimes doesn't focus window immediately
+   - **Fix**: Call both `.show()` and `.set_focus()` sequentially
+
+### Future Improvements
+
+1. **Hide Dock Icon (Tauri 2 Native)**
+   - Explore `NSApplication.setActivationPolicy()` via objc crate
+   - Directly call macOS APIs to hide Dock icon with Regular policy
+   - Would allow full functionality + menu bar only
+
+2. **Focus Shield Alternative**
+   - Use `NSPanel` instead of `NSWindow` for menu bar windows
+   - Panels can accept focus without appearing in Dock
+   - Requires custom Tauri window type
+
+3. **Event Deduplication**
+   - Track event timestamps to filter duplicate events
+   - Ignore events within 50ms of each other
+   - Already implemented for double-click (300ms window)
+
+### Testing Checklist (Tauri 2 Specific)
+
+- [ ] Tray icon appears in menu bar
+- [ ] Timer text shows next to icon (e.g., "15:00")
+- [ ] Left-click shows window at correct position
+- [ ] Left-click again hides window
+- [ ] Right-click shows menu with Show/Settings/Quit
+- [ ] **Buttons are clickable** (Start Session works!)
+- [ ] Settings window opens
+- [ ] Timer updates in menu bar every second
+- [ ] Double-click closes app
+- [ ] Window stays on top (alwaysOnTop)
+- [ ] Transparent background works
+- [ ] DevTools opens with right-click → Inspect Element
+
+### Debug Commands
+
+**Check current activation policy:**
+```bash
+# In DevTools Console (Cmd+Opt+I):
+await window.__TAURI__.core.invoke('get_activation_policy')
+```
+
+**Monitor window focus:**
+```javascript
+// In DevTools Console:
+window.addEventListener('focus', () => console.log('✅ Window focused'));
+window.addEventListener('blur', () => console.log('❌ Window lost focus'));
+```
+
+**Check click event frequency:**
+```rust
+// In main.rs, add to click handler:
+eprintln!("🔍 Click at {:?} - {:?}",
+    SystemTime::now(),
+    event
+);
+```

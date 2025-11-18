@@ -235,14 +235,38 @@ cocoa = "0.24"  # For macOS Calendar
   "tauri": {
     "bundle": {
       "identifier": "com.focustime.app",  // Unique ID
-      "resources": ["icons/18x18.png"]    // Bundle files
+      "icon": [
+        "icons/32x32.png",
+        "icons/icon.icns",
+        "icons/icon.ico",
+        "icons/icon.png"
+      ],
+      "resources": ["icons/icon-18x18.png"]    // Bundle files
     },
     "systemTray": {
-      "iconPath": "icons/18x18.png",
+      "iconPath": "icons/icon-18x18.png",
       "iconAsTemplate": true,  // Adaptive icon (macOS)
       "menuOnLeftClick": false
     },
-    "windows": [...]  // Window configuration
+    "windows": [
+      {
+        "label": "main",
+        "url": "index.html",
+        "title": "Hyper Awareness",
+        "width": 380,
+        "height": 580,
+        "center": false,
+        "x": 30,
+        "y": 30,
+        "resizable": false,
+        "fullscreen": false,
+        "decorations": false,
+        "visible": true,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "transparent": true
+      }
+    ]
   }
 }
 ```
@@ -269,7 +293,7 @@ cocoa = "0.24"  # For macOS Calendar
 **Configuration:**
 ```json
 "systemTray": {
-  "iconPath": "icons/18x18.png",
+  "iconPath": "icons/icon-18x18.png",
   "iconAsTemplate": true  // CRITICAL for macOS
 }
 ```
@@ -284,9 +308,16 @@ let menu = SystemTrayMenu::new()
     .add_item(CustomMenuItem::new("show", "Show Timer"))
     .add_item(CustomMenuItem::new("quit", "Quit"));
 
+// Load the tray icon using include_bytes! to embed it in the binary
+let icon = tauri::Icon::Raw(
+    include_bytes!("../icons/icon-18x18.png").to_vec()
+);
+
 let system_tray = SystemTray::new()
+    .with_icon(icon)  // Set icon explicitly in Rust
     .with_menu(menu)
-    .with_tooltip("Hyper Awareness");
+    .with_tooltip("Hyper Awareness")
+    .with_menu_on_left_click(false);
 ```
 
 **Handling Clicks:**
