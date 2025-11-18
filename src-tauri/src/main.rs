@@ -6,12 +6,12 @@ mod logs;
 
 use std::{
     fs::{self, OpenOptions},
-    io::{Cursor, Write},
+    io::Write,
     path::PathBuf,
     sync::Mutex,
 };
 
-use image::io::Reader as ImageReader;
+use image::io::Reader as _ImageReader;
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -327,7 +327,7 @@ fn main() {
             let settings_i = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
-            let menu = Menu::with_items(
+            let _menu = Menu::with_items(
                 app,
                 &[
                     &show_i,
