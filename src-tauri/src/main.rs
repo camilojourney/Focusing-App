@@ -1,15 +1,17 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Temporarily allow console in release mode for debugging
+// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod calendar;
 mod logs;
 
 use std::{
     fs::{self, OpenOptions},
-    io::Write,
+    io::{Cursor, Write},
     path::PathBuf,
     sync::Mutex,
 };
 
+use image::io::Reader as ImageReader;
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -283,12 +285,14 @@ fn main() {
         .manage(AppState {
             tray_position: Mutex::new(None),
         })
-        // 1. MOVED: Handle menu events globally here (since tray doesn't own the menu anymore)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
                 if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
                     let _ = window.show();
                     let _ = window.set_focus();
+                    #[cfg(target_os = "macos")]
+                    let _ = app.show();
                 }
             }
             "settings" => {
@@ -299,11 +303,21 @@ fn main() {
             }
             _ => {}
         })
+        // Add this block to prevent the app from quitting on window close
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                eprintln!("🏃 Window close requested, hiding window to keep app alive.");
+                api.prevent_close();
+                window.hide().unwrap();
+            }
+            _ => {}
+        })
         .setup(|app| {
-            // Use Regular policy so windows can accept focus and clicks work
-            // skipTaskbar in tauri.conf.json keeps it out of Dock
+            eprintln!("🚀 Starting setup...");
+            // Use Prohibited policy on macOS - this is the key fix for menu bar apps
+            // This prevents the app from appearing in Dock and from quitting when hidden
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Regular);
+            app.set_activation_policy(tauri::ActivationPolicy::Prohibited);
 
             let settings = load_settings(app.handle()).unwrap_or_default();
             let initial_time = format!("{}:00", settings.check_in_interval);
@@ -323,17 +337,17 @@ fn main() {
                 ],
             )?;
 
+            eprintln!("🛠️ Building tray icon...");
             let icon_bytes = include_bytes!("../icons/tray-44x44.png");
             let icon = Image::from_bytes(icon_bytes)?;
 
+            // Build tray with icon included from the start
             let _tray = TrayIconBuilder::with_id("main")
-                .icon(icon)
-                .menu(&menu)
                 .tooltip("Hyper Awareness")
                 .title(&initial_time)
-                .icon_as_template(true)
-                .show_menu_on_left_click(false)  // Prevent menu from opening on left click
-                // Note: .on_menu_event was removed from here and moved to top-level Builder
+                .icon(icon)
+                .icon_as_template(true) // Use template icon
+                .show_menu_on_left_click(false) // Prevent menu from opening on left click
                 .on_tray_icon_event(move |tray, event| {
                     let app = tray.app_handle();
                     let state = app.state::<AppState>();
@@ -356,16 +370,14 @@ fn main() {
                                 if window.is_visible().unwrap_or(false) {
                                     let _ = window.hide();
                                 } else {
+                                    // CRITICAL: Unminimize and activate app for proper window focus in builds
+                                    let _ = window.unminimize();
                                     let _ = position_window_at_top(app.clone());
                                     let _ = window.show();
                                     let _ = window.set_focus();
-
+                                    // Force app to foreground on macOS
                                     #[cfg(target_os = "macos")]
-                                    {
-                                        // Keep Regular policy (Spec 006 §12) so the window can accept input
-                                        let _ =
-                                            app.set_activation_policy(tauri::ActivationPolicy::Regular);
-                                    }
+                                    let _ = app.show();
                                 }
                             }
                         }
@@ -373,6 +385,8 @@ fn main() {
                     }
                 })
                 .build(app)?;
+
+            eprintln!("✅ Tray icon created and should be visible in menu bar");
 
             Ok(())
         })
