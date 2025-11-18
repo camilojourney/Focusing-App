@@ -1,103 +1,111 @@
 # ROADMAP.md — Focus Time: Execution & Mastery Plan
 
-**Last Updated**: November 13, 2025
-**Ship Goal**: v1.0 by Q1 2026
+**Last Updated**: November 18, 2025
+**Ship Goal**: ✅ v1.0 SHIPPED
 **Owner**: Camilo Martinez
-**Status**: ACTIVE
-**Current Phase**: v0.1 Alpha COMPLETE ✅ | v0.2 Beta IN PROGRESS 🚧
+**Status**: ACTIVE - Planning v1.1 Features
+**Current Phase**: v1.0 Production COMPLETE ✅
 
 ---
 
 ## 1. Major Milestones (High-Level)
 
-### v0.1 Alpha: "It Works" ✅ COMPLETE (Shipped: November 2025)
-**Goal**: Prove core concept works. Build-test-ship cycle.
+### v1.0 Production: "It Works & It Ships" ✅ COMPLETE (Shipped: November 2025)
+
+**Goal**: Production-ready native macOS menu bar application with complete self-awareness features.
 
 **What Shipped:**
-- ✅ Menu bar timer visible and updating every 1 second
-- ✅ User can set goal and track sessions
-- ✅ Check-ins log to disk (JSONL format)
-- ✅ Settings persistence (JSON file)
-- ✅ macOS calendar integration (EventKit)
-- ✅ Automatic desktop switching (AppleScript)
-- ✅ Accountability Box with 5 reflection questions
-- ✅ Adaptive menu bar icon (theme-aware)
-- ✅ Privacy-first local storage
+- ✅ Menu bar timer with live countdown (updates every second)
+- ✅ Session goal tracking with calendar integration
+- ✅ Interactive check-ins every 15 minutes (6 status options)
+- ✅ **Session Review Panel** - Timeline visualization with statistics
+- ✅ Local data logging (JSONL append-only format)
+- ✅ Settings persistence with full customization
+- ✅ macOS calendar integration (EventKit with permissions)
+- ✅ **Window positioning** - Three modes (centered, tray-relative, draggable)
+- ✅ **Auto-hide behavior** - Window hides after Start and check-in responses
+- ✅ **Standard macOS window decorations** - Native close/minimize/maximize
+- ✅ **macOS Sequoia compatibility** - Fixed tray icon rendering (icon_as_template false)
+- ✅ Privacy-first local storage (no cloud, no telemetry)
 
-**Bonus Features Shipped:**
-- ✅ Calendar permission management
-- ✅ Multiple distraction status types
-- ✅ Optional notes for each check-in
-- ✅ Settings validation and error handling
+**Technical Achievements:**
+- ✅ Upgraded to Tauri v2.1.0
+- ✅ Modular Rust architecture (main.rs, calendar.rs, logs.rs)
+- ✅ 10 registered Tauri commands for frontend-backend communication
+- ✅ JSONL logging with structured session data
+- ✅ Debug logging with emoji markers for troubleshooting
 
 **Success Metrics Achieved:**
 - ✅ Build succeeds with zero compiler warnings
-- ✅ App runs stable for extended sessions
+- ✅ App runs stable for multi-hour sessions
 - ✅ Data persists correctly across restarts
-- ✅ Menu bar icon visibility issue resolved
+- ✅ Tray icon visible on macOS Sequoia (15.x)
+- ✅ All window positioning modes work correctly
+- ✅ Auto-hide behavior works as expected
 
 ---
 
-### v0.2 Beta: "It's Useful" 🚧 IN PROGRESS (Target: December 2025)
-**Goal**: Multi-platform, analytics, professional UX.
+### v1.1 Beta: "Advanced Analytics" 🎯 NEXT (Target: Q1 2026)
 
-**What's Shipping:**
-- 🚧 Session Review Panel (Spec 001) - IN PROGRESS
-  - View current session check-ins in drawer
-  - Summary statistics (on-task vs. distraction count)
-  - Real-time updates as check-ins occur
-- ⏳ Session History UI (past sessions)
-- ⏳ Daily/Weekly Summary (aggregated analytics)
-- ⏳ Data Export (CSV/JSON)
-- ⏳ Performance Optimization (<50MB idle, <5ms logging)
-- ⏳ Windows Support (feature parity with macOS)
-- ⏳ GitHub Actions CI/CD (automated releases)
+**Goal**: Enhanced data visualization and cross-session insights.
 
-**What's Deferred:**
-- Cloud sync (v1.0)
-- Encryption at rest (v1.0)
-- Mobile (v1.5+)
+**Planned Features:**
+- � Session History Browser - View all past sessions with filtering
+- 📈 Daily/Weekly Trends - Charts showing focus patterns over time
+- 🎯 Goal Completion Tracking - Track how often you achieve your stated goals
+- 📁 Data Export - CSV/JSON export for external analysis
+- 🔔 Smart Notifications - Optional audio/visual alerts for check-ins
+- ⚡ Performance Optimization - <50MB idle memory, <5ms logging latency
 
-**Success Metrics (TBD):**
+**Technical Roadmap:**
+- Implement SQLite for faster querying (keep JSONL for append-only logging)
+- Add charting library (lightweight, privacy-respecting)
+- Create statistics engine for trend analysis
+
+**Success Metrics:**
 - 10+ external beta testers
 - <1% data loss rate
 - <5ms check-in logging latency
-- Cross-platform feature parity (macOS + Windows)
+- User-reported productivity improvements
 
 ---
 
-### v1.0 Release: "Production Ready" (Target: Week 14)
-**Goal**: Hardened, distributed-systems-ready, shipping with confidence.
+### v1.5 Release: "Multi-Platform" (Target: Q2 2026)
+
+**Goal**: Cross-platform support for Windows and Linux.
 
 **What Ships:**
-- Personal server sync (opt-in, user-hosted)
-- Encryption at rest (settings + logs)
-- Comprehensive monitoring & error recovery
-- Code-signed, versioned releases
-- Full documentation + user guides
+- ✅ macOS (already complete)
+- 🎯 Windows Support - Feature parity with menu bar/system tray
+- 🎯 Linux Support - System tray integration for major DEs (GNOME, KDE)
+- 🔧 Platform-specific integrations (Windows Task Scheduler, Linux desktop files)
+- 🚀 GitHub Actions CI/CD - Automated builds for all platforms
 
-**Not Included:**
-- Mobile apps (future)
-- AI insights (future)
-- Enterprise features (future)
-
-**Success Metric:**
-- 100+ active users
-- 99.9% uptime SLO met
-- Zero unplanned data loss incidents
-- Sync works correctly across 3+ devices
+**Deferred to Future:**
+- Cloud sync (v2.0)
+- Encryption at rest (v2.0)
+- Mobile apps (v2.5+)
+- AI insights (v3.0+)
 
 ---
 
 ## 2. Detailed Phase Breakdown
 
-### Phase 0: Foundation (Week 1-2)
+### Phase 1: Core Foundation ✅ COMPLETE
 
 #### Deliverables
 
-| Deliverable                 | Owner  | Status | Validation                 |
-| --------------------------- | ------ | ------ | -------------------------- |
-| Prototype timer logic (CLI) | Camilo | ✅      | Counts 12 hours accurately |
+| Deliverable                      | Owner  | Status | Validation                          |
+| -------------------------------- | ------ | ------ | ----------------------------------- |
+| Tauri v2 menu bar app            | Camilo | ✅      | Builds and runs on macOS            |
+| Timer countdown logic            | Camilo | ✅      | Accurate to second, updates in tray |
+| Check-in trigger system          | Camilo | ✅      | Fires every N minutes (configurable)|
+| JSONL data logging               | Camilo | ✅      | Append-only, no data loss           |
+| Settings persistence             | Camilo | ✅      | JSON file, survives app restarts    |
+| Calendar integration (EventKit)  | Camilo | ✅      | Fetches current event, permissions  |
+| Window positioning system        | Camilo | ✅      | 3 modes: centered, tray, draggable  |
+| Session Review Panel             | Camilo | ✅      | Timeline + statistics + export      |
+| macOS Sequoia compatibility      | Camilo | ✅      | Tray icon visible on 15.x           |
 | JSONL schema finalized      | Camilo | ✅      | Documented, validated      |
 | GitHub Actions setup        | Camilo | ⏳      | Deferred to v0.2           |
 | Menu bar UI skeleton        | Camilo | ✅      | Icon appears, works        |

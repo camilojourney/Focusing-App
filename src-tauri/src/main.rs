@@ -11,7 +11,6 @@ use std::{
     sync::Mutex,
 };
 
-use image::io::Reader as _ImageReader;
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -238,6 +237,34 @@ fn position_window_at_top(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn position_window_centered(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        if let Ok(Some(monitor)) = window.current_monitor() {
+            let monitor_frame = monitor.position();
+            let monitor_size = monitor.size();
+            let scale_factor = monitor.scale_factor();
+
+            let window_width = 380.0;
+            let window_height = 500.0;
+
+            // Calculate center position in logical pixels
+            let center_x = monitor_frame.x as f64 + (monitor_size.width as f64 / scale_factor) / 2.0 - (window_width / 2.0);
+            let center_y = monitor_frame.y as f64 + (monitor_size.height as f64 / scale_factor) / 2.0 - (window_height / 2.0);
+
+            eprintln!("📍 Centering window at ({}, {})", center_x, center_y);
+
+            window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition {
+                    x: center_x,
+                    y: center_y,
+                }))
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn log_check_in(app: AppHandle, log_line: String) -> Result<(), String> {
     let path = log_file_path(&app)?;
 
@@ -314,10 +341,12 @@ fn main() {
         })
         .setup(|app| {
             eprintln!("🚀 Starting setup...");
-            // Use Prohibited policy on macOS - this is the key fix for menu bar apps
-            // This prevents the app from appearing in Dock and from quitting when hidden
+            // Use Regular policy - app shows in Dock, tray icon fix deferred
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Prohibited);
+            {
+                eprintln!("🔧 Using Regular activation policy (shows in Dock)");
+                // Keep default Regular policy - tray icon fix deferred for later
+            }
 
             let settings = load_settings(app.handle()).unwrap_or_default();
             let initial_time = format!("{}:00", settings.check_in_interval);
@@ -338,17 +367,24 @@ fn main() {
             )?;
 
             eprintln!("🛠️ Building tray icon...");
+            // Load icon from embedded bytes (simpler and guaranteed to work)
             let icon_bytes = include_bytes!("../icons/tray-44x44.png");
-            let icon = Image::from_bytes(icon_bytes)?;
+            eprintln!("📦 Icon file size: {} bytes", icon_bytes.len());
 
-            // Build tray with icon included from the start
-            let _tray = TrayIconBuilder::with_id("main")
+            let icon = Image::from_bytes(icon_bytes)?;
+            eprintln!("✅ Icon loaded successfully");
+
+            // Build tray with icon and menu attached
+            eprintln!("🔨 Building TrayIconBuilder...");
+            let tray_result = TrayIconBuilder::with_id("main")
                 .tooltip("Hyper Awareness")
                 .title(&initial_time)
                 .icon(icon)
-                .icon_as_template(true) // Use template icon
+                .icon_as_template(false) // CRITICAL FIX: Disable template mode for macOS Sequoia
+                .menu(&_menu) // Attach the menu to the tray
                 .show_menu_on_left_click(false) // Prevent menu from opening on left click
                 .on_tray_icon_event(move |tray, event| {
+                    eprintln!("🖱️ Tray event received: {:?}", event);
                     let app = tray.app_handle();
                     let state = app.state::<AppState>();
 
@@ -359,6 +395,7 @@ fn main() {
                             position,
                             ..
                         } => {
+                            eprintln!("✅ Left click detected at position: {:?}", position);
                             *state.tray_position.lock().unwrap() = Some(TrayPosition {
                                 x: position.x,
                                 y: position.y,
@@ -384,9 +421,18 @@ fn main() {
                         _ => {}
                     }
                 })
-                .build(app)?;
+                .build(app);
 
-            eprintln!("✅ Tray icon created and should be visible in menu bar");
+            match tray_result {
+                Ok(_) => {
+                    eprintln!("✅ Tray icon BUILT successfully - should now be visible in menu bar");
+                    eprintln!("📍 If you don't see it, check: 1) App is still running  2) Menu bar is not full  3) System tray settings");
+                }
+                Err(e) => {
+                    eprintln!("❌ TRAY BUILD FAILED: {:?}", e);
+                    return Err(Box::new(e));
+                }
+            }
 
             Ok(())
         })
@@ -397,6 +443,7 @@ fn main() {
             open_settings,
             update_tray_timer,
             position_window_at_top,
+            position_window_centered,
             log_check_in,
             get_current_event,
             request_calendar_permission,

@@ -1,9 +1,9 @@
 # MVP.md — Focus Time: Minimum Viable Product
 
-**Last Updated**: November 13, 2025
-**Target Ship Date**: Q1 2026
+**Last Updated**: November 18, 2025
+**Target Ship Date**: ✅ v1.0 Shipped
 **Owner**: Camilo Martinez
-**Current Status**: Phase 1 MVP Complete (v0.1 Alpha)
+**Current Status**: v1.0 Production - All Phase 1 Goals Complete
 
 ---
 
@@ -15,27 +15,35 @@ Knowledge workers and computer professionals lose awareness of their actual work
 
 ## Vision
 
-**Focus Time is the self-awareness engine for deep work.**
+**Focus Time (Hyper Awareness) is the self-awareness engine for deep work.**
 
-By v1.0, the app will be the gold standard for personal productivity monitoring: accurate, private, insightful, and available everywhere (desktop, cloud, mobile) while putting the user in complete control of their data.
+v1.0 delivers on the core promise: a native macOS menu bar application that tracks your intentions vs. actual behavior with zero cloud dependencies. The app is privacy-first, locally-stored, and provides real-time metacognition through periodic check-ins.
 
-## Current Implementation Status (v0.1 Alpha - SHIPPED ✅)
+## Current Implementation Status (v1.0 Production - SHIPPED ✅)
 
 **What's Working:**
-- ✅ Menu bar timer with live countdown display
-- ✅ Session goal tracking
-- ✅ Interactive check-ins with status reporting (On Task, Social Media, Email/Chat, Other Distractions, Break)
-- ✅ Local data logging (JSONL format)
-- ✅ Settings persistence
-- ✅ macOS calendar integration (EventKit)
-- ✅ Automatic desktop switching (macOS via AppleScript)
-- ✅ Accountability Box for deep reflection
-- ✅ Adaptive menu bar icon (theme-aware)
-- ✅ Privacy-first local storage
+- ✅ Menu bar timer with live countdown display (e.g., "14:32")
+- ✅ Session goal tracking with calendar integration
+- ✅ Interactive check-ins every 15 minutes (6 status options)
+- ✅ Local data logging (JSONL format with session history)
+- ✅ **Session Review Panel** - Timeline visualization with statistics
+- ✅ Settings persistence with full customization
+- ✅ macOS calendar integration (EventKit with permission flow)
+- ✅ **Window positioning** - Centered on check-ins, draggable during interaction
+- ✅ **Auto-hide behavior** - Window hides after Start and check-in responses
+- ✅ **Standard macOS window decorations** - Close/minimize/maximize buttons
+- ✅ **macOS Sequoia compatible** - Fixed tray icon rendering for macOS 15.x
+- ✅ Privacy-first local storage (no cloud, no telemetry)
 
 **Platform Support:**
-- ✅ macOS (full functionality)
-- ⏳ Windows/Linux (partial - no desktop switching or calendar integration yet)
+- ✅ macOS 11+ (full functionality, tested on Sequoia 15.x)
+- ⏳ Windows/Linux (not currently supported, future roadmap)
+
+**Recent Technical Achievements (November 2025):**
+- Fixed tray icon rendering on macOS Sequoia using `icon_as_template(false)`
+- Implemented three-mode window positioning (centered, tray-relative, draggable)
+- Created modular Rust architecture (main.rs, calendar.rs, logs.rs)
+- Upgraded to Tauri v2.1.0 for improved performance and security
 
 ---
 

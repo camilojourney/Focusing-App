@@ -1,6 +1,6 @@
 # DOCUMENT_OF_TRUTH.md — Hyper Awareness System Design & Engineering Roadmap
 
-**Last Updated**: November 3, 2025
+**Last Updated**: November 18, 2025
 **Audience**: Technical co-founders, engineers, Camilo's learning journal
 **Status**: Living Document (updated after every major decision)
 
@@ -14,15 +14,35 @@ Billions of hours are lost to distraction daily. Knowledge workers don't realize
 
 **Long-term mission**: Transform how humans understand their own productivity through real-time, private, honest feedback.
 
+### Current Status (v1.0 - November 2025)
+
+✅ **Completed Core Features:**
+- macOS menu bar app with system tray integration
+- 12-hour focus sessions with 15-minute check-ins
+- JSONL-based logging system for check-in history
+- Session review panel with timeline visualization
+- Calendar integration (EventKit) for goal auto-fill
+- Settings management with persistence
+- Window positioning (centered on check-ins, near tray on click)
+- Auto-hide behavior (window hides on Start and after check-in responses)
+- Full window draggability with standard macOS decorations
+
+🔧 **Recent Fixes (November 18, 2025):**
+- Fixed tray icon rendering on macOS Sequoia (disabled template mode for RGBA icons)
+- Implemented centered window positioning for check-ins
+- Added auto-hide after check-in responses
+- Enabled standard macOS window decorations (red/yellow/green buttons)
+
 ### How This Connects to Your Engineering Growth (Camilo)
 
 By building Hyper Awareness from zero to production:
-- **Desktop**: You'll master modern app architecture (Tauri, IPC, systems programming)
-- **Cloud v1.5+**: You'll design distributed systems for data sync, conflict resolution, multi-device support
-- **DevOps**: You'll own the entire pipeline from local build to production deployment
-- **Performance**: Every decision you make will be constrained by latency, memory, and battery
+- **Desktop**: You've mastered Tauri v2, Rust backend, IPC, and macOS system integration
+- **Cloud v1.5+**: Next phase will include distributed systems for data sync and multi-device support
+- **DevOps**: You own the entire pipeline from local build to production deployment
+- **Performance**: Every decision is constrained by latency, memory, and battery life
+- **Systems Programming**: Deep understanding of menu bar apps, window management, and OS APIs
 
-**Goal by v1.0**: You will not only ship a product but understand how every component works at the systems level.
+**Achieved by v1.0**: Shipped a production-ready macOS app with native system integration and solved real-world rendering issues on macOS Sequoia.
 
 ---
 
@@ -32,17 +52,18 @@ By building Hyper Awareness from zero to production:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Hyper Awareness                         │
+│                     Hyper Awareness v1.0                    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │         FRONTEND LAYER (Web UI)                     │  │
 │  │  ┌──────────────────────────────────────────────┐  │  │
 │  │  │  HTML/CSS/JavaScript (Vanilla, no frameworks)  │  │  │
-│  │  │  - Timer Display                              │  │  │
-│  │  │  - Check-In UI                               │  │  │
-│  │  │  - Settings Panel                            │  │  │
-│  │  │  - Session History View                      │  │  │
+│  │  │  - Timer Display (countdown + session time)   │  │  │
+│  │  │  - Check-In UI (status buttons + notes)       │  │  │
+│  │  │  - Settings Panel (intervals, positioning)    │  │  │
+│  │  │  - Session History View (timeline + stats)    │  │  │
+│  │  │  - Calendar Button (EventKit integration)     │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  │           ↑ IPC Bridge ↓  (JSON serialization)     │  │
 │  └─────────────────────────────────────────────────────┘  │
@@ -51,39 +72,57 @@ By building Hyper Awareness from zero to production:
 │  │         BACKEND LAYER (Rust)                        │  │
 │  │  ┌──────────────────────────────────────────────┐  │  │
 │  │  │  Command Handlers (@tauri::command macros)   │  │  │
-│  │  │  ✓ get_settings()                           │  │  │
-│  │  │  ✓ save_settings()                          │  │  │
-│  │  │  ✓ update_tray_timer()                      │  │  │
-│  │  │  ✓ log_check_in()                          │  │  │
-│  │  │  ✓ get_current_event()                     │  │  │
+│  │  │  ✅ get_settings()                           │  │  │
+│  │  │  ✅ save_settings()                          │  │  │
+│  │  │  ✅ open_settings()                          │  │  │
+│  │  │  ✅ update_tray_timer(timer_text)            │  │  │
+│  │  │  ✅ position_window_at_top()                 │  │  │
+│  │  │  ✅ position_window_centered() [NEW]         │  │  │
+│  │  │  ✅ log_check_in(log_line)                   │  │  │
+│  │  │  ✅ get_current_event()                      │  │  │
+│  │  │  ✅ request_calendar_permission()            │  │  │
+│  │  │  ✅ list_session_entries(start_time)         │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  │                                                      │  │
 │  │  ┌──────────────────────────────────────────────┐  │  │
 │  │  │  Core Business Logic                         │  │  │
-│  │  │  ✓ Timer State Machine                      │  │  │
-│  │  │  ✓ Session Duration Tracking               │  │  │
-│  │  │  ✓ Check-in Interval Calculation           │  │  │
-│  │  │  ✓ Status Aggregation                      │  │  │
+│  │  │  ✅ Timer State Machine                      │  │  │
+│  │  │  ✅ Session Duration Tracking (12h default)  │  │  │
+│  │  │  ✅ Check-in Interval (15min default)        │  │  │
+│  │  │  ✅ Write Time Window (20s default)          │  │  │
+│  │  │  ✅ Status Aggregation & Logging             │  │  │
+│  │  │  ✅ Auto-hide on Start & Check-in Response   │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  │                                                      │  │
 │  │  ┌──────────────────────────────────────────────┐  │  │
-│  │  │  System Integrations (macOS/Windows)         │  │  │
-│  │  │  ✓ System Tray / Menu Bar                   │  │  │
-│  │  │  ✓ EventKit (Calendar, macOS only)         │  │  │
-│  │  │  ✓ Desktop Switching (AppleScript)         │  │  │
-│  │  │  ✓ Native Notifications                    │  │  │
+│  │  │  System Integrations (macOS)                 │  │  │
+│  │  │  ✅ Menu Bar Tray Icon (with timer text)     │  │  │
+│  │  │  ✅ EventKit Calendar Access (macOS)         │  │  │
+│  │  │  ✅ Window Management (center, near-tray)    │  │  │
+│  │  │  ✅ Standard macOS Window Decorations        │  │  │
+│  │  │  ✅ Tray Icon Fix (macOS Sequoia RGBA)       │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  └─────────────────────────────────────────────────────┘  │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │         DATA LAYER (Local Storage)                  │  │
 │  │  ┌──────────────────────────────────────────────┐  │  │
-│  │  │  ~/.config/hyper-awareness/ (Linux/macOS)   │  │  │
-│  │  │  %APPDATA%\hyper-awareness\ (Windows)       │  │  │
+│  │  │  ~/Library/Application Support/              │  │  │
+│  │  │    com.focustime.app/ (macOS)                │  │  │
 │  │  │                                              │  │  │
 │  │  │  ├── settings.json (User preferences)       │  │  │
-│  │  │  ├── focus_log.jsonl (Check-in history)    │  │  │
-│  │  │  └── [encrypted/] (Optional encryption)    │  │  │
+│  │  │  │   • session_duration: 720 (minutes)      │  │  │
+│  │  │  │   • check_in_interval: 15 (minutes)      │  │  │
+│  │  │  │   • write_time: 20 (seconds)             │  │  │
+│  │  │  │   • window_position: "auto"              │  │  │
+│  │  │  │                                           │  │  │
+│  │  │  └── focus_log.jsonl (Check-in history)    │  │  │
+│  │  │      • timestamp (ISO 8601)                 │  │  │
+│  │  │      • session_goal (string)                │  │  │
+│  │  │      • reported_status (enum)               │  │  │
+│  │  │      • notes (optional string)              │  │  │
+│  │  │      • check_in_number (int)                │  │  │
+│  │  │      • auto_submitted (bool)                │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  └─────────────────────────────────────────────────────┘  │
 │                                                             │
@@ -91,9 +130,10 @@ By building Hyper Awareness from zero to production:
 
 ┌─────────────────────────────────────────────────────────────┐
 │  RUNTIME ENVIRONMENT                                        │
-│  - Tauri v1.8.3 (webview wrapper)                          │
-│  - OS-native WebView (Safari on macOS, Edge on Windows)   │
+│  - Tauri v2.1.0 (webview wrapper) [UPGRADED]              │
+│  - OS-native WebView (WebKit on macOS)                    │
 │  - Tokio runtime (async Rust execution)                   │
+│  - macOS 15 Sequoia compatibility                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -928,43 +968,129 @@ Batch multiple check-ins into single IPC call (future optimization).
 
 ---
 
-## 10. Current Architecture Status
+## 10. Current Architecture Status (November 18, 2025)
 
-### v0.1 Alpha (Current Sprint)
+### v1.0 Production-Ready (Current State)
 
-**Implemented:**
-- ✅ Menu bar icon (fixed template mode issue)
-- ✅ Basic timer UI
-- ✅ Local settings storage (JSON)
-- ✅ Check-in logging (JSONL)
-- ✅ macOS system tray integration
+**Implemented & Verified:**
+- ✅ Menu bar icon with timer text display
+- ✅ Tray icon rendering fix for macOS Sequoia (RGBA icon support)
+- ✅ Complete timer UI with check-in workflow
+- ✅ Local settings storage (JSON) with persistence
+- ✅ Check-in logging (JSONL) with full metadata
+- ✅ macOS system tray integration with event handling
+- ✅ Window positioning: centered on check-in, near tray on click
+- ✅ Auto-hide behavior: window hides on Start and after check-in
+- ✅ Standard macOS window decorations (close/minimize/maximize buttons)
+- ✅ Full window draggability
+- ✅ Calendar integration (EventKit) with permission handling
+- ✅ Session review panel with timeline visualization
+- ✅ Settings panel with all configurable intervals
 
-**In Progress:**
-- 🚧 Settings panel UI
-- 🚧 Session history view
-- 🚧 Windows platform support
+**Recently Fixed (November 18, 2025):**
+1. **Tray Icon Rendering** — Changed `icon_as_template(false)` to support RGBA colored icons on macOS Sequoia
+2. **Window Positioning** — Added `position_window_centered()` command for consistent check-in placement
+3. **Auto-Hide Behavior** — Re-enabled `appWindow.hide()` after Start and check-in responses
+4. **Window Decorations** — Enabled standard macOS window controls for better UX
 
-**Not Started:**
-- ⏳ Data export
-- ⏳ Analytics/insights
-- ⏳ Sync (v1.0+)
+**Platform Support:**
+- ✅ macOS (primary platform, fully tested on Sequoia 15.x)
+- ⏳ Windows (not yet tested)
+- ⏳ Linux (not yet tested)
 
-### Known Limitations
+**Not Started (Future Roadmap):**
+- ⏳ Data export (CSV/JSON)
+- ⏳ Advanced analytics/insights dashboard
+- ⏳ Cloud sync (v1.5+)
+- ⏳ Multi-device support
+- ⏳ Encryption at rest
 
-1. **No Encryption**: Settings/logs are plaintext (ok for MVP, adds for v0.2)
-2. **Single User**: No multi-user profiles (ok for desktop, needed for web)
-3. **No Cloud Sync**: Data stuck on one device (feature for v1.0+)
-4. **Limited Analytics**: Basic aggregate stats only (v0.2)
-5. **No Notifications**: OS notifications not wired (v0.2)
+### Known Limitations & Trade-offs
+
+1. **No Encryption**: Settings/logs are plaintext (acceptable for v1.0, planned for v1.2)
+2. **Single Device**: No cloud sync, data stays on one machine (feature for v1.5+)
+3. **macOS Only**: Windows/Linux support not tested (planned for v1.1)
+4. **Basic Analytics**: Simple aggregate stats only (advanced insights in v1.2)
+5. **No Notifications**: OS notifications not implemented (planned for v1.1)
+6. **Tray Icon Limitation**: Using colored icon (no template mode) means no auto dark/light mode adaptation
+
+### Technical Debt & Future Improvements
+
+**Performance:**
+- Consider batch updates for tray timer text (currently updates every tick)
+- Optimize JSONL file reads for large session histories
+
+**UX:**
+- Add keyboard shortcuts for check-in responses
+- Implement drag-to-reposition window persistence
+- Add sound/haptic feedback on check-in trigger
+
+**Code Quality:**
+- Extract window positioning logic into dedicated module
+- Add integration tests for Rust commands
+- Improve error handling with user-friendly messages
 
 ---
 
-## 11. The Engineering Roadmap (Aligned with Mastery)
+## 11. Recent Technical Decisions & Learnings (November 2025)
 
-### By End of v0.1 (Week 6)
+### macOS Sequoia Tray Icon Fix
+
+**Problem**: Tray icon invisible on macOS Sequoia despite successful build and tray creation.
+
+**Root Cause**: Using `icon_as_template(true)` with an RGBA colored PNG. Template mode expects alpha-mask (black + transparent) only. macOS Sequoia renders colored PNGs in template mode as completely transparent.
+
+**Solution**: Changed to `icon_as_template(false)` to force OS to render the colored icon exactly as-is.
+
+**Trade-off**: Icon will not auto-adapt to light/dark mode, but will always be visible.
+
+**Reference**: `src-tauri/src/main.rs:383`
+
+### Window Management Architecture
+
+**Design**: Three positioning modes:
+1. **Centered** — Used for check-ins (interruption pattern)
+2. **Near Tray** — Used when clicking tray icon (spatial proximity)
+3. **User Drag** — Window is fully draggable during interaction
+
+**Commands**:
+- `position_window_centered()` — Centers on primary monitor
+- `position_window_at_top()` — Positions relative to stored tray icon location
+
+**Auto-Hide Behavior**:
+- Window hides on `startSession()` to minimize distraction
+- Window hides in `handleCheckInResponse()` after user selection
+- Window shows centered on every 15-min check-in trigger
+
+### Tauri v2 Migration Notes
+
+**Key Changes from v1 to v2**:
+- `get_window()` → `get_webview_window()`
+- More explicit window management API
+- `withGlobalTauri: true` required for DevTools in dev mode
+- `ActivationPolicy` handling improved for menu bar apps
+
+**Best Practices Learned**:
+- Always use Rust commands for system integration (not tauri.conf.json)
+- Keep tray icon builder in `.setup()` to prevent garbage collection
+- Use `Regular` activation policy for apps that need window focus
+- Use `Prohibited` for true menu bar-only apps (we use Regular for interactive windows)
+
+---
+
+## 12. The Engineering Roadmap (Aligned with Mastery)
+
+### Completed by v1.0 (November 2025)
+**Mastered:**
+- ✅ Tauri v2 IPC patterns and command architecture
+- ✅ Rust command macros & JSON serialization
+- ✅ macOS system integration (tray, window management, EventKit)
+- ✅ JSONL append-only logging for time-series data
+- ✅ Real-time window positioning and auto-hide behavior
+- ✅ Debugging and fixing platform-specific rendering issues
+
+### By End of v1.1 (Target: January 2026)
 **You Will Master:**
-- Tauri IPC patterns
-- Rust command macros & type serialization
 - System tray integration (macOS)
 - File I/O error handling
 - Local development workflow

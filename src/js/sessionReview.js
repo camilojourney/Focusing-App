@@ -1,3 +1,5 @@
+import { waitForTauriBridge } from '../tauri-bridge.js';
+
 /**
  * Session Review Module
  *
@@ -6,12 +8,20 @@
  */
 (function () {
     // Avoid leaking globals that collide with index.html script
-    const tauriInvoke =
-        window.Tauri?.invoke || window.__TAURI__?.core?.invoke || window.__TAURI__?.tauri?.invoke;
+    let tauriInvoke = null;
 
-    if (!tauriInvoke) {
-        console.error('SessionReview: Tauri invoke not available');
-    }
+    waitForTauriBridge()
+        .then(() => {
+            tauriInvoke =
+                window.Tauri?.invoke || window.__TAURI__?.core?.invoke || window.__TAURI__?.tauri?.invoke;
+
+            if (!tauriInvoke) {
+                console.error('SessionReview: Tauri invoke not available');
+            }
+        })
+        .catch((error) => {
+            console.error('SessionReview: failed to initialize Tauri bridge', error);
+        });
 
     class SessionReview {
         constructor() {

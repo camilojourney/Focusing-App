@@ -627,6 +627,49 @@ jobs:
 2. Icon must be pure black + transparent
 3. Restart Dock: `killall Dock`
 
+**Update (November 2025 - macOS Sequoia):**
+
+On **macOS Sequoia (15.x)**, template mode has stricter rendering requirements. If you see the tray icon disappear or become completely transparent:
+
+**Root Cause**: Sequoia's `iconAsTemplate: true` mode only works with pure black + alpha-mask PNG images. Colored RGBA icons render as completely transparent.
+
+**Solution Options:**
+
+1. **Use Template Mode (Adaptive)**: Convert icon to pure black silhouette with transparent background, keep `iconAsTemplate: true`
+   - **Pros**: Icon adapts to light/dark mode automatically
+   - **Cons**: Requires redesigning icon as pure black silhouette
+
+2. **Disable Template Mode (Colored Icon)**: Set `iconAsTemplate: false` in Rust code
+   - **Pros**: Can use colored/RGBA icons, always visible
+   - **Cons**: Icon won't adapt to theme changes (stays same color in light/dark mode)
+
+**Our Implementation** (Hyper Awareness v1.0):
+```rust
+// src-tauri/src/main.rs
+SystemTray::new()
+    .with_icon(icon)
+    .with_menu(menu)
+    .with_tooltip("Hyper Awareness")
+    .icon_as_template(false)  // ← CRITICAL for colored icons on Sequoia
+```
+
+**Why This Fix Works:**
+- `icon_as_template(false)` tells macOS to render the icon as-is without template processing
+- Colored RGBA icons display correctly
+- Trade-off: Icon stays the same color regardless of system theme
+
+**Testing on Sequoia:**
+```bash
+# Build and run
+pnpm run build
+open "src-tauri/target/release/bundle/macos/Hyper Awareness.app"
+
+# Verify tray icon appears in menu bar
+# Check both light and dark mode (System Settings → Appearance)
+```
+
+See `specs/006-menu-bar-integration.md` Section 13 for full technical details.
+
 ### Problem: Calendar Permission Not Working
 
 **Cause**: Missing entitlements or user denied permission

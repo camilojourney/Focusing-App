@@ -1,78 +1,100 @@
-# Focus Time
+# Hyper Awareness (Focus Time)
 
 A macOS menu bar focus timer application designed to help you maintain deep work sessions with periodic check-ins and reflection breaks.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)
-![Tauri](https://img.shields.io/badge/Tauri-v1.8.3-brightgreen.svg)
+![Tauri](https://img.shields.io/badge/Tauri-v2.1.0-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v1.0%20Production-success.svg)
 
 ## Overview
 
-Focus Time is a productivity app that combines long-form focus sessions with periodic check-ins to help you maintain awareness and intentionality throughout your work. Unlike traditional Pomodoro timers, Focus Time is designed for extended deep work sessions (default 12 hours) gzxadr
+**Hyper Awareness** is a productivity app that combines long-form focus sessions with periodic check-ins to help you maintain awareness and intentionality throughout your work. Unlike traditional Pomodoro timers, Hyper Awareness is designed for extended deep work sessions (default 12 hours) with intelligent interruptions that promote metacognition.
 
-**Phase 1 "Self-Aware MVP" is now complete!** The app tracks your intentions vs. actual behavior, creating a data foundation for future AI-powered insights. See [PHASE1_IMPLEMENTATION.md](PHASE1_IMPLEMENTATION.md) for details.
+**v1.0 is now live!** The app provides a complete self-awareness system with menu bar integration, calendar sync, and comprehensive session logging.
 
 ### Key Features
 
-- **Session Goal Tracking**: Set your intention at the start of each session
-- **Interactive Check-ins**: Report what you're actually doing at each check-in point
-- **Cognitive Awareness**: See your goal displayed when checking in - creates powerful metacognition
-- **Calendar Integration**: Automatically detects current calendar events to help contextualize your focus
-- **Data Logging**: All check-ins are logged locally to JSONL format for future analysis
-- **Status Tracking**: On Task, Social Media, Email/Chat, Other Distractions, or Taking a Break
-- **Accountability Box**: Answer deep reflection questions and save them to your personal accountability log
-- **Automatic Desktop Switching**: Switches to Desktop 1 on macOS during check-ins for a clean reflection space
-- **Menu Bar Integration**: Beautiful adaptive icon that changes with system theme (white in dark mode, black in light mode)
-- **Menu Bar Timer**: Live countdown display right in your menu bar
-- **Persistent Settings**: Your preferences are saved between sessions
-- **Privacy First**: All data stored locally only - no cloud sync, complete privacy
+#### Core Functionality
+- 🧠 **Session Goal Tracking**: Set your intention at the start of each session
+- ✅ **Interactive Check-ins**: Report what you're actually doing at each check-in point (every 15 min)
+- 🎯 **Cognitive Awareness**: See your goal displayed when checking in - creates powerful metacognition
+- 📅 **Calendar Integration**: Automatically detects current calendar events to help contextualize your focus
+- 📊 **Session Review**: Timeline visualization of your focus patterns with statistics
+- 💾 **Data Logging**: All check-ins logged locally to JSONL format for future analysis
+- 🔔 **Status Tracking**: On Task, Social Media, Email/Chat, Other Distractions, or Taking a Break
+
+#### Menu Bar Integration (macOS)
+- 🍎 **Native Menu Bar App**: Lives in the system tray like Spotlight or Dropbox
+- ⏱️ **Live Timer Display**: Countdown shown directly in menu bar (e.g., "14:32")
+- 🎨 **macOS Sequoia Compatible**: Fixed rendering for latest macOS (colored icon support)
+- 📍 **Smart Positioning**: Window centers on check-ins, appears near tray when clicked
+- 👻 **Auto-Hide Behavior**: Window hides after Start and check-in responses
+- 🖱️ **Fully Draggable**: Move window anywhere during interaction
+
+#### Privacy & Settings
+- 🔒 **Privacy First**: All data stored locally only - no cloud sync, complete privacy
+- ⚙️ **Customizable Intervals**: Adjust session duration, check-in frequency, and write time
+- 💾 **Persistent Settings**: Your preferences are saved between sessions
 
 ## How It Works
 
 ### The Focus Session Flow
 
-1. **Set Your Goal**: Enter what you want to accomplish (e.g., "Finish chapter 4 of my thesis")
-2. **Start Session**: Begin your focus timer. Both the session timer and check-in countdown start.
-3. **Check-in Triggered**: When the check-in interval is reached (default: 15 minutes):
+1. **Launch App**: Click brain icon in menu bar
+2. **Set Your Goal**: Enter what you want to accomplish (or use 📅 Event button for current meeting)
+3. **Start Session**: Click "Start Focus" - window hides, timer runs in background
+4. **Check-in Triggered**: When the check-in interval is reached (default: 15 minutes):
    - Session automatically pauses
-   - Desktop switches to Desktop 1 (macOS)
-   - Check-in screen appears showing your goal
-4. **Report Status**: Click what you're actually doing:
+   - Window appears **centered on screen**
+   - Check-in screen shows your goal
+5. **Report Status**: Click what you're actually doing:
    - ✅ On Task
-   - 📱 Social Media (distraction)
-   - 📧 Email/Chat (distraction)
-   - 🔀 Other Distraction
    - ☕️ Taking a Break
-5. **Optional Notes**: Add a quick reflection or note
-6. **Data Logged**: Your response is saved to a local JSONL file
-7. **Auto-Resume**: Session automatically resumes after you respond (or after 20s timeout)
-8. **Repeat**: Continue until the full session duration is complete
+   - 📱 Social Media
+   - 📧 Email/Chat
+   - 🔀 Other Distraction
+   - ⏭️ Skip
+6. **Optional Notes**: Add a quick reflection or note
+7. **Data Logged**: Your response is saved to a local JSONL file
+8. **Auto-Hide**: Window hides immediately after response
+9. **Repeat**: Continue until the full session duration is complete
+
+### Menu Bar Access
+
+- **Click tray icon**: Shows/hides main window (positioned near tray)
+- **Right-click tray icon**: Access menu (Show Timer, Settings, Quit)
+- **Close window**: Red button hides window (app keeps running)
+- **Quit app**: Use menu bar → Quit
 
 ### Default Settings
 
 - **Session Duration**: 720 minutes (12 hours)
 - **Check-in Interval**: 15 minutes
 - **Write Time**: 20 seconds
+- **Window Position**: Auto (centered on check-ins)
 
-All settings can be customized through the settings window.
+All settings can be customized through the settings window (⚙️ button or tray menu).
 
 ## Technologies
 
 This app is built with modern, performant technologies:
 
 **Frontend**
-- HTML5, CSS3, JavaScript (vanilla)
+- HTML5, CSS3, JavaScript (vanilla - no frameworks)
+- Glassmorphic UI with backdrop filters
 - Tauri frontend API for native integration
 
 **Backend**
-- Rust with Tauri framework
-- System tray integration with adaptive icon (macOS template image)
+- Rust with Tauri v2 framework
+- Menu bar tray icon with timer text updates
 - Calendar access via EventKit (macOS)
-- AppleScript execution for desktop switching
+- Window positioning and auto-hide management
+- JSONL-based append-only logging
 
 **Build Tools**
-- Tauri CLI
-- npm for dependency management
+- Tauri CLI v2
+- pnpm for dependency management
 - Cargo for Rust dependencies
 
 ## Project Structure
@@ -81,16 +103,34 @@ This app is built with modern, performant technologies:
 Focusing-App/
 ├── src/                      # Frontend application
 │   ├── index.html           # Main timer interface
-│   └── settings.html        # Settings configuration UI
+│   ├── settings.html        # Settings configuration UI
+│   ├── main.js              # Core timer logic
+│   ├── tauri-bridge.js      # Tauri IPC bridge
+│   └── js/
+│       └── sessionReview.js # Session history panel
 ├── src-tauri/               # Rust backend
 │   ├── src/
-│   │   ├── main.rs          # Main application logic
-│   │   └── calendar.rs      # macOS Calendar integration
+│   │   ├── main.rs          # Main application logic & commands
+│   │   ├── calendar.rs      # macOS Calendar integration (EventKit)
+│   │   └── logs.rs          # JSONL logging and reading
 │   ├── icons/               # Application icons
-│   │   └── 18x18.png        # Menu bar icon (template image)
+│   │   ├── tray-44x44.png   # Menu bar icon (RGBA colored)
+│   │   └── icon.icns        # App bundle icon
 │   ├── Cargo.toml           # Rust dependencies
-│   ├── tauri.conf.json      # Tauri configuration
+│   ├── tauri.conf.json      # Tauri v2 configuration
 │   └── entitlements.plist   # macOS permissions
+├── docs/                    # Documentation
+│   ├── DOCUMENT_OF_TRUTH.md # System design & architecture
+│   ├── ROADMAP.md           # Feature roadmap
+│   └── LESSONS.md           # Engineering lessons learned
+├── specs/                   # Feature specifications
+│   ├── 001-session-review-panel.md
+│   ├── 002-calendar-integration.md
+│   ├── 003-accountability-box.md
+│   ├── 004-settings-management.md
+│   ├── 005-data-logging.md
+│   └── 006-menu-bar-integration.md
+├── AGENTS.md                # Project constitution
 ├── package.json             # npm configuration
 └── README.md               # This file
 ```
@@ -99,133 +139,203 @@ Focusing-App/
 
 ### Prerequisites
 
-- **Node.js** (v14 or higher)
+- **Node.js** v18 or higher
+- **pnpm** (package manager) - `npm install -g pnpm`
 - **Rust** (latest stable version) - Required for Tauri backend
-- **macOS** (for full functionality including desktop switching)
+- **macOS** 11 or higher (tested on macOS Sequoia 15)
 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/Focusing-App.git
    cd Focusing-App
    ```
 
 2. **Install Rust** (if not already installed):
+
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
 
    After installation, configure your current shell:
+
    ```bash
    source $HOME/.cargo/env
    ```
 
    Or add this to your `~/.zshrc` or `~/.bashrc` for permanent access:
+
    ```bash
    export PATH="$HOME/.cargo/bin:$PATH"
    ```
 
-3. Install npm dependencies:
+3. Install pnpm dependencies:
+
    ```bash
    pnpm install
    ```
 
 4. Run in development mode:
+
    ```bash
    pnpm run dev
    ```
 
    **Note:** If you get a "cargo not found" error, make sure to run:
+
    ```bash
    source $HOME/.cargo/env
    ```
 
 5. Build for production:
+
    ```bash
    pnpm run build
    ```
 
-The compiled application will be available in `src-tauri/target/release/bundle/`.
+The compiled application will be available in `src-tauri/target/release/bundle/macos/Hyper Awareness.app`.
+
+## macOS Sequoia Compatibility
+
+If you're running **macOS Sequoia (15.x)**, the app has been tested and verified to work correctly with the following fix:
+
+- **Tray Icon Rendering**: The app uses a colored RGBA PNG icon with `icon_as_template(false)` to ensure visibility in the menu bar. This is a deliberate trade-off for Sequoia compatibility - the icon will not adapt to light/dark mode changes but will always be visible.
+
+For more technical details, see [specs/006-menu-bar-integration.md](specs/006-menu-bar-integration.md#macos-sequoia-compatibility).
 
 ## Usage
 
 ### Starting the App
 
-After launching Focus Time, you'll see a timer icon in your macOS menu bar.
+After launching **Hyper Awareness**, you'll see a brain icon (🧠) in your macOS menu bar with a timer countdown.
 
 **Menu Bar Options:**
-- Click the tray icon to show/hide the main window
-- Right-click for menu: Show, Settings, Quit
+- **Click the tray icon**: Show/hide the main window (positioned near tray)
+- **Right-click the tray icon**: Access menu with Show Timer, Settings, Quit
 
 ### Using the Timer
 
-1. **Start a Session**: Click the "Start Session" button
-2. **Monitor Progress**: Watch your session time, check-in countdown, and completed check-ins
-3. **Handle Check-ins**: When a check-in occurs:
-   - Your desktop will switch to Desktop 1
-   - Take a moment to reflect during the writing countdown
-   - Session resumes automatically
-4. **Pause/Resume**: Use the pause button if you need to take a break
-5. **Reset**: Start fresh with the reset button
+1. **Set Your Goal**: Enter what you want to accomplish, or click 📅 **Event** to pull from your current calendar event
+2. **Start a Session**: Click "Start Focus" button
+   - Window automatically hides and moves to the background
+   - Timer runs silently with live countdown in menu bar (e.g., "14:32")
+3. **Check-in Occurs**: After the check-in interval (default: 15 minutes):
+   - Session pauses automatically
+   - Window appears **centered on screen**
+   - Your original goal is displayed
+   - You have 20 seconds (default) to respond
+4. **Report Your Status**: Click one of 6 options:
+   - ✅ **On Task** - You're doing what you intended
+   - ☕️ **Taking a Break** - Intentional rest
+   - 📱 **Social Media** - Got distracted by social apps
+   - 📧 **Email/Chat** - Got distracted by messages
+   - 🔀 **Other Distraction** - Something else pulled you away
+   - ⏭️ **Skip** - Don't want to answer right now
+5. **Optional Note**: Add a quick reflection (optional)
+6. **Auto-Resume**: After you respond, the window hides and the session continues automatically
+7. **Review Anytime**: Click 📊 **Review** to see your session timeline and focus statistics
 
 ### Configuring Settings
 
-1. Click the "Settings" button or access from the menu bar
+1. Click ⚙️ **Settings** button or access from the tray menu
 2. Adjust your preferences:
-   - **Session Duration**: Total focus time in minutes
-   - **Check-in Interval**: How often to pause for reflection
-   - **Write Time**: Duration of reflection period in seconds
-3. Click "Save Settings" to apply changes
+   - **Session Duration**: Total focus time in minutes (default: 720 = 12 hours)
+   - **Check-in Interval**: How often to check in (default: 15 minutes)
+   - **Write Time**: How long you have to respond (default: 20 seconds)
+   - **Window Position**: Auto (recommended) or Manual positioning
+3. Click "💾 Save Settings" to apply changes
 
 ## Architecture
 
 ### Backend (Rust)
 
-The Rust backend ([src-tauri/src/main.rs](src-tauri/src/main.rs)) handles:
+The Rust backend (`src-tauri/src/`) handles system integration and native functionality:
 
-- **Settings Management**: Load and save user preferences to disk
-- **System Tray**: Menu bar integration and timer display
-- **Window Management**: Show/hide application windows
-- **Desktop Switching**: Execute AppleScript commands for macOS desktop control
-- **IPC Commands**: Expose functions to the frontend via Tauri's command system
+**Main Module** (`main.rs`):
+- **Settings Management**: Load/save user preferences to disk
+- **Menu Bar Tray**: Integration with macOS menu bar, live timer display
+- **Window Management**: Show/hide, positioning (centered or tray-relative)
+- **IPC Commands**: Expose Rust functions to frontend via Tauri commands
+
+**Calendar Module** (`calendar.rs`):
+- **EventKit Integration**: Access macOS Calendar to fetch current events
+- **Permission Handling**: Request calendar access via native macOS dialogs
+
+**Logs Module** (`logs.rs`):
+- **JSONL Logging**: Append-only check-in data logging
+- **Session Reading**: Parse and return session entries for review panel
 
 **Key Tauri Commands:**
 - `get_settings()` - Retrieve saved settings
-- `save_settings()` - Persist user preferences
+- `save_settings(settings)` - Persist user preferences
 - `open_settings()` - Launch settings window
-- `log_check_in()` - Save check-in data to JSONL file
+- `update_tray_timer(text)` - Update menu bar timer display
+- `position_window_at_top()` - Position window near tray icon
+- `position_window_centered()` - Center window on screen (used for check-ins)
+- `log_check_in(...)` - Save check-in data to JSONL file
+- `list_session_entries(...)` - Read session data for review panel
 - `get_current_event()` - Get current calendar event from macOS Calendar
 - `request_calendar_permission()` - Request calendar access permission
-- `update_tray_timer()` - Update menu bar timer display
 
 ### Frontend (JavaScript)
 
-The frontend ([src/index.html](src/index.html)) manages:
+The frontend (`src/`) manages UI and user interaction:
 
+**Main Interface** (`index.html` + `main.js`):
 - **Session State**: Track timers and session status
-- **UI Updates**: Real-time display of elapsed time, remaining time, and check-ins
+- **UI Updates**: Real-time display of elapsed time, remaining time, check-ins completed
 - **Timer Logic**: Coordinate session timer, check-in intervals, and write time
 - **User Interactions**: Handle button clicks and state transitions
+- **Auto-Hide Behavior**: Hide window after Start and after check-in responses
+
+**Session Review** (`js/sessionReview.js`):
+- **Timeline Visualization**: Display all check-ins in chronological order
+- **Statistics**: Calculate focus score, distraction breakdown, time analysis
+- **Export**: Copy session data to clipboard for further analysis
 
 **State Management:**
+
 ```javascript
-sessionTimeRemaining      // Total session countdown
-checkInTimeRemaining      // Next check-in countdown
-writeTimeRemaining        // Writing mode countdown
-isSessionRunning          // Active session flag
-isWriting                 // Writing mode flag
+sessionTimeRemaining      // Total session countdown (e.g., 43200 seconds = 12 hours)
+checkInTimeRemaining      // Next check-in countdown (e.g., 900 seconds = 15 min)
+writeTimeRemaining        // Check-in response timeout (e.g., 20 seconds)
+isSessionRunning          // Active session flag (true/false)
+isCheckInPending          // Check-in screen visible flag (true/false)
+completedCheckIns         // Count of completed check-ins this session
 ```
 
 ### Communication Flow
 
 ```
-Frontend (HTML/JS) <---> Tauri IPC <---> Backend (Rust) <---> System (macOS)
-     |                                        |
-     |                                        |
-  UI Updates                            File I/O, Tray,
-  Timers                                Desktop Switching
+Frontend (HTML/JS) <--IPC--> Tauri Commands <---> Backend (Rust) <---> macOS APIs
+                                                         |
+                                                         +---> EventKit (Calendar)
+                                                         +---> NSStatusBar (Tray)
+                                                         +---> File System (Logs/Settings)
 ```
+
+## Recent Updates (v1.0 - November 2025)
+
+### ✅ Completed Features
+
+- **macOS Sequoia Compatibility**: Fixed tray icon rendering issue for macOS 15.x
+- **Window Positioning System**: Three modes (centered, tray-relative, fully draggable)
+- **Auto-Hide Behavior**: Window hides after Start button and after check-in responses
+- **Standard Window Decorations**: Native macOS close/minimize/maximize buttons
+- **Session Review Panel**: Timeline visualization with focus statistics
+- **Calendar Integration**: One-click goal setting from current calendar events
+- **Live Menu Bar Timer**: Real-time countdown displayed directly in menu bar
+- **Complete Settings Management**: Persistent configuration for all app behavior
+
+### 🔧 Technical Improvements
+
+- Upgraded to Tauri v2.1.0 (from v1.8.3)
+- Implemented `position_window_centered()` command for check-ins
+- Added debug logging with emoji markers for window hide operations
+- Created modular Rust architecture (main.rs, calendar.rs, logs.rs)
+- Improved JSONL logging with structured session data
 
 ## Platform Notes
 

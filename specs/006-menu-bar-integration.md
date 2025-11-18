@@ -649,7 +649,111 @@ src/index.html
    - macOS sometimes doesn't focus window immediately
    - **Fix**: Call both `.show()` and `.set_focus()` sequentially
 
-### Future Improvements
+---
+
+## 13. macOS Sequoia Compatibility (November 2025 Update)
+
+### Issue: Invisible Tray Icon on macOS Sequoia 15.x
+
+**Problem**: Tray icon created successfully (logs show "✅ Tray icon BUILT successfully") but icon is invisible in menu bar.
+
+**Root Cause**: Template mode (`icon_as_template(true)`) with RGBA colored icon (44x44 PNG with full color).
+
+**Technical Explanation**:
+- Template mode expects **alpha-mask only** (black + transparent pixels)
+- macOS Sequoia renders colored PNGs in template mode as **completely transparent**
+- The stricter rendering in Sequoia doesn't auto-convert colored icons like previous versions
+
+**Solution Applied** (November 18, 2025):
+```rust
+// src-tauri/src/main.rs:383
+.icon_as_template(false) // CRITICAL FIX: Disable template mode for macOS Sequoia
+```
+
+**Trade-offs**:
+- ✅ Icon is now visible on all macOS versions
+- ✅ Full color icon displays correctly
+- ❌ Icon will NOT auto-adapt to light/dark mode
+- ❌ Icon stays same color regardless of menu bar theme
+
+**Alternative Solution** (For Future):
+Create two separate icons:
+1. Template icon (black + transparent for template mode)
+2. Colored icon (for non-template mode)
+
+Switch based on macOS version detection:
+```rust
+let use_template = if macos_version >= 15.0 { false } else { true };
+TrayIconBuilder::with_id("main")
+    .icon_as_template(use_template)
+    ...
+```
+
+**Related Files**:
+- `src-tauri/icons/tray-44x44.png` — Current RGBA colored icon (2778 bytes)
+- `src-tauri/src/main.rs:369-387` — Tray icon builder configuration
+
+**Testing on Sequoia**:
+```bash
+# Verify icon file format
+file src-tauri/icons/tray-44x44.png
+# Output: PNG image data, 44 x 44, 8-bit/color RGBA, non-interlaced
+
+# Check if icon appears in menu bar
+ps aux | grep focus-time
+# App should be running with visible icon in menu bar
+
+# Monitor tray events
+tail -f /tmp/tauri-dev-logs.txt | grep "Tray"
+```
+
+**Lessons Learned**:
+1. Always test on latest macOS version before release
+2. Template mode requirements are stricter in newer macOS versions
+3. RGBA icons require `icon_as_template(false)` on Sequoia
+4. Consider creating platform-specific icon variants
+5. Document OS-specific rendering differences
+
+---
+
+## 14. Window Positioning Architecture (November 2025)
+
+### Current Implementation
+
+**Three Positioning Modes**:
+
+1. **Centered Positioning** (`position_window_centered()`)
+   - Used for: Check-in interruptions every 15 minutes
+   - Behavior: Centers window on primary monitor
+   - Purpose: Consistent, predictable location for quick responses
+   - Implementation: `src-tauri/src/main.rs:240-265`
+
+2. **Tray-Relative Positioning** (`position_window_at_top()`)
+   - Used for: User clicks tray icon to show window
+   - Behavior: Positions window near tray icon location
+   - Purpose: Spatial proximity to clicked element
+   - Implementation: `src-tauri/src/main.rs:160-235`
+
+3. **User Draggable**
+   - Used for: Manual window repositioning by user
+   - Behavior: Full window draggability with `-webkit-app-region: drag`
+   - Purpose: User control during interaction
+   - Implementation: `src/index.html:456-473` (drag-handle CSS)
+
+**Auto-Hide Behavior**:
+- Window hides after "Start Focus" pressed
+- Window hides immediately after check-in response
+- Window shows centered on every check-in trigger
+- Window shows near tray when tray icon clicked
+
+**Window Decorations**:
+- Standard macOS controls enabled (`"decorations": true`)
+- Red/yellow/green buttons for close/minimize/maximize
+- Allows native macOS window management
+
+---
+
+## 15. Future Improvements
 
 1. **Hide Dock Icon (Tauri 2 Native)**
    - Explore `NSApplication.setActivationPolicy()` via objc crate
@@ -666,20 +770,34 @@ src/index.html
    - Ignore events within 50ms of each other
    - Already implemented for double-click (300ms window)
 
+4. **Dynamic Icon Mode**
+   - Detect macOS version at runtime
+   - Use template mode for macOS < 15, colored for >= 15
+   - Provides best experience on all OS versions
+
+5. **Window Position Memory**
+   - Remember last user-dragged position
+   - Restore position on next tray click
+   - Reset to tray-relative on check-in
+
 ### Testing Checklist (Tauri 2 Specific)
 
-- [ ] Tray icon appears in menu bar
-- [ ] Timer text shows next to icon (e.g., "15:00")
-- [ ] Left-click shows window at correct position
-- [ ] Left-click again hides window
-- [ ] Right-click shows menu with Show/Settings/Quit
-- [ ] **Buttons are clickable** (Start Session works!)
-- [ ] Settings window opens
-- [ ] Timer updates in menu bar every second
-- [ ] Double-click closes app
-- [ ] Window stays on top (alwaysOnTop)
-- [ ] Transparent background works
-- [ ] DevTools opens with right-click → Inspect Element
+- [x] Tray icon appears in menu bar
+- [x] Timer text shows next to icon (e.g., "15:00")
+- [x] Left-click shows window at correct position
+- [x] Left-click again hides window
+- [x] Right-click shows menu with Show/Settings/Quit
+- [x] **Buttons are clickable** (Start Session works!)
+- [x] Settings window opens
+- [x] Timer updates in menu bar every second
+- [ ] Double-click closes app (not implemented)
+- [x] Window stays on top (alwaysOnTop)
+- [x] Transparent background works
+- [x] DevTools opens with right-click → Inspect Element
+- [x] Window hides on Start
+- [x] Window hides after check-in response
+- [x] Window centers on check-in trigger
+- [x] Tray icon visible on macOS Sequoia
 
 ### Debug Commands
 
@@ -703,4 +821,13 @@ eprintln!("🔍 Click at {:?} - {:?}",
     SystemTime::now(),
     event
 );
+```
+
+**Test auto-hide behavior:**
+```javascript
+// In browser console:
+console.log('🔽 Testing hide on Start...');
+// Press Start button, window should hide
+console.log('🔽 Testing hide on check-in response...');
+// Select check-in option, window should hide immediately
 ```
