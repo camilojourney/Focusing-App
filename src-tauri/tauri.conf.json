@@ -21,13 +21,16 @@
       "icons/tray-44x44.png": ".",
       "icons/32x32.png": "."
     },
-    "targets": [
-      "app",
-      "dmg"
-    ],
+    "targets": "all",
     "macOS": {
       "minimumSystemVersion": "10.13",
       "entitlements": "entitlements.plist"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "allowDowngrades": true
     }
   },
   "app": {
