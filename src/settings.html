@@ -14,13 +14,14 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 15px;
-            padding-top: 35px; /* Account for title bar */
+            padding-top: 35px;
+            /* Account for title bar */
             padding-bottom: 15px;
             /* Dark liquid glass background */
             background: linear-gradient(135deg,
-                rgba(20, 20, 30, 0.95) 0%,
-                rgba(30, 30, 50, 0.95) 50%,
-                rgba(40, 30, 60, 0.95) 100%);
+                    rgba(20, 20, 30, 0.95) 0%,
+                    rgba(30, 30, 50, 0.95) 50%,
+                    rgba(40, 30, 60, 0.95) 100%);
             backdrop-filter: blur(40px);
             -webkit-backdrop-filter: blur(40px);
             color: rgba(255, 255, 255, 0.95);
@@ -61,7 +62,8 @@
             grid-row: 1;
         }
 
-        input, select {
+        input,
+        select {
             padding: 8px 12px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
@@ -96,7 +98,8 @@
             color: rgba(255, 255, 255, 0.5);
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             background: rgba(255, 255, 255, 0.12);
             border-color: rgba(255, 255, 255, 0.4);
             box-shadow:
@@ -237,7 +240,8 @@
         <div class="setting-item">
             <label for="writeTime">Response Time (seconds)</label>
             <input type="number" id="writeTime" placeholder="25" min="1">
-            <div class="description">How long you have to respond to check-in before auto-continuing (default: 25 seconds)</div>
+            <div class="description">How long you have to respond to check-in before auto-continuing (default: 25
+                seconds)</div>
         </div>
 
         <div class="setting-item">
@@ -290,10 +294,12 @@
         // Load current settings
         window.addEventListener('DOMContentLoaded', async () => {
             // Prevent window close - hide instead
-            await appWindow.onCloseRequested(async (event) => {
-                event.preventDefault();
-                await appWindow.hide();
-            });
+            if (appWindow) {
+                await appWindow.onCloseRequested(async (event) => {
+                    event.preventDefault();
+                    await appWindow.hide();
+                });
+            }
 
             try {
                 const settings = await invoke('get_settings');
@@ -307,7 +313,7 @@
             }
         });
 
-        window.saveSettings = async function() {
+        window.saveSettings = async function () {
             const settings = {
                 session_duration: parseInt(document.getElementById('sessionDuration').value, 10) || 720,
                 check_in_interval: parseInt(document.getElementById('checkInInterval').value, 10) || 15,
@@ -319,18 +325,20 @@
                 await invoke('save_settings', { settings });
                 // Notify main window that settings changed
                 await emit('settings-updated', settings);
-                await appWindow.close();
+                // Hide instead of close to keep state
+                await appWindow.hide();
             } catch (error) {
                 console.error('Failed to save settings:', error);
                 alert('Failed to save settings: ' + error);
             }
         }
 
-        window.cancel = async function() {
-            await appWindow.close();
+        window.cancel = async function () {
+            // Hide instead of close
+            await appWindow.hide();
         }
 
-        window.resetToDefaults = async function() {
+        window.resetToDefaults = async function () {
             // Set default values
             document.getElementById('sessionDuration').value = 720;
             document.getElementById('checkInInterval').value = 15;

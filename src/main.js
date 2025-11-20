@@ -57,6 +57,26 @@ async function ensureTauriReady() {
     }
 }
 
+async function hideMainWindow(context = '') {
+    const contextLabel = context ? ` (${context})` : '';
+    try {
+        await ensureTauriReady();
+        const win = appWindow || window.Tauri?.appWindow;
+        if (win?.hide) {
+            await win.hide();
+            return;
+        }
+    } catch (error) {
+        console.error(`❌ Failed to hide window via JS${contextLabel}:`, error);
+    }
+
+    try {
+        await invoke('hide_window');
+    } catch (fallbackError) {
+        console.error(`❌ hide_window fallback failed${contextLabel}:`, fallbackError);
+    }
+}
+
 function cacheDom() {
     dom.timerLabel = document.getElementById('timerLabel');
     dom.timer = document.getElementById('timer');
@@ -78,6 +98,8 @@ function cacheDom() {
     dom.focusShieldBanner = document.getElementById('focusShieldBanner');
     dom.focusShieldText = document.getElementById('focusShieldText');
     dom.focusShieldCancelBtn = document.getElementById('focusShieldCancelBtn');
+    dom.winClose = document.getElementById('winClose');
+    dom.winMinimize = document.getElementById('winMinimize');
 }
 
 function formatTime(seconds) {
@@ -335,19 +357,7 @@ async function startSession({ autoHide = true } = {}) {
 
     // Hide window after starting - timer runs in background
     if (autoHide) {
-        try {
-            await ensureTauriReady();
-            const win = window.Tauri?.appWindow;
-            console.log('🔽 Hiding window after Start...', win);
-            if (win && win.hide) {
-                await win.hide();
-                console.log('✅ Window hidden successfully');
-            } else {
-                console.error('❌ appWindow.hide not available. window.Tauri:', window.Tauri);
-            }
-        } catch (error) {
-            console.error('❌ Failed to hide window:', error);
-        }
+        await hideMainWindow('start focus');
     }
 } function pauseSession({ reason } = {}) {
     if (!isSessionRunning) return;
@@ -485,19 +495,7 @@ async function handleCheckInResponse(status, options = {}) {
     }
 
     // Hide window immediately after response
-    try {
-        await ensureTauriReady();
-        const win = window.Tauri?.appWindow;
-        console.log('🔽 Hiding window after check-in response...');
-        if (win && win.hide) {
-            await win.hide();
-            console.log('✅ Window hidden successfully');
-        } else {
-            console.error('❌ appWindow.hide not available. window.Tauri:', window.Tauri);
-        }
-    } catch (error) {
-        console.error('❌ Failed to hide window:', error);
-    }
+    await hideMainWindow('check-in submit');
 
     endWriteTime({ auto: options.auto, status });
 }
@@ -567,7 +565,7 @@ async function openSettings() {
 
 async function testCheckIn() { await triggerCheckIn({ forced: true }); }
 
-async function useCalendarEvent() {
+async function useCalendarEvent(silent = false) {
     try {
         const result = await invoke('get_current_event');
         if (result) {
@@ -575,11 +573,12 @@ async function useCalendarEvent() {
             isUsingCalendarEvent = true;
             updateCalendarButtonState();
             startCalendarAutoRefresh();
-        } else {
+        } else if (!silent) {
             alert('No calendar event found for the current time.');
         }
     } catch (error) {
-        alert(error || 'Failed to access calendar.');
+        if (!silent) alert(error || 'Failed to access calendar.');
+        console.error('Calendar access failed:', error);
     }
 }
 
@@ -678,13 +677,35 @@ window.addEventListener('DOMContentLoaded', async () => {
                 stopCalendarAutoRefresh();
                 if (dom.sessionGoal) dom.sessionGoal.value = '';
             } else {
-                useCalendarEvent();
+                useCalendarEvent(false);
             }
         });
     }
 
     if (dom.focusShieldBtn) dom.focusShieldBtn.addEventListener('click', extendFocusShield);
     if (dom.focusShieldCancelBtn) dom.focusShieldCancelBtn.addEventListener('click', cancelFocusShield);
+
+    // Window Controls
+    const winClose = document.getElementById('winClose');
+    const winMinimize = document.getElementById('winMinimize');
+
+    if (winClose) {
+        winClose.addEventListener('click', async () => {
+            try {
+                await ensureTauriReady();
+                await appWindow.hide();
+            } catch (e) { console.error('Failed to hide window:', e); }
+        });
+    }
+
+    if (winMinimize) {
+        winMinimize.addEventListener('click', async () => {
+            try {
+                await ensureTauriReady();
+                await appWindow.minimize();
+            } catch (e) { console.error('Failed to minimize window:', e); }
+        });
+    }
 
     document.querySelectorAll('.check-in-buttons button').forEach((button) => {
         button.addEventListener('click', () => {
@@ -713,6 +734,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     await loadSettings();
     resetSession();
+
+    // Auto-sync calendar on startup
+    useCalendarEvent(true);
 
     const unlisten = await listen('settings-updated', (event) => {
         if (event?.payload) {

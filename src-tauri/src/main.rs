@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition};
+use tauri::{ActivationPolicy, AppHandle, Manager, PhysicalPosition};
 
 // Store the last known tray icon position
 struct TrayPosition {
@@ -307,6 +307,11 @@ fn list_session_entries(
     logs::read_since(&app, start_time)
 }
 
+#[tauri::command]
+fn hide_window(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.hide().map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(AppState {
@@ -340,12 +345,10 @@ fn main() {
             _ => {}
         })
         .setup(|app| {
-            eprintln!("🚀 Starting setup...");
-            // Use Regular policy - app shows in Dock, tray icon fix deferred
+            // Use Regular activation policy to show in Dock
             #[cfg(target_os = "macos")]
             {
-                eprintln!("🔧 Using Regular activation policy (shows in Dock)");
-                // Keep default Regular policy - tray icon fix deferred for later
+                app.set_activation_policy(ActivationPolicy::Regular);
             }
 
             let settings = load_settings(app.handle()).unwrap_or_default();
@@ -367,12 +370,14 @@ fn main() {
             )?;
 
             eprintln!("🛠️ Building tray icon...");
-            // Load icon from embedded bytes (simpler and guaranteed to work)
-            let icon_bytes = include_bytes!("../icons/tray-44x44.png");
-            eprintln!("📦 Icon file size: {} bytes", icon_bytes.len());
+            // Load smaller tray icon (22x22) - closer to v1's 18x18
+            let icon_bytes = include_bytes!("../icons/tray-22x22.png");
+            let image = image::load_from_memory(icon_bytes).map_err(|e| e.to_string())?.into_rgba8();
+            let (width, height) = image.dimensions();
+            let rgba = image.into_raw();
 
-            let icon = Image::from_bytes(icon_bytes)?;
-            eprintln!("✅ Icon loaded successfully");
+            let icon = Image::new(&rgba, width, height);
+            eprintln!("✅ Icon loaded successfully ({}x{})", width, height);
 
             // Build tray with icon and menu attached
             eprintln!("🔨 Building TrayIconBuilder...");
@@ -380,7 +385,7 @@ fn main() {
                 .tooltip("Hyper Awareness")
                 .title(&initial_time)
                 .icon(icon)
-                .icon_as_template(false) // CRITICAL FIX: Disable template mode for macOS Sequoia
+                .icon_as_template(true) // Use template mode like working v1 version
                 .menu(&_menu) // Attach the menu to the tray
                 .show_menu_on_left_click(false) // Prevent menu from opening on left click
                 .on_tray_icon_event(move |tray, event| {
@@ -444,11 +449,30 @@ fn main() {
             update_tray_timer,
             position_window_at_top,
             position_window_centered,
+            hide_window,
             log_check_in,
             get_current_event,
             request_calendar_permission,
             list_session_entries
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| match event {
+            tauri::RunEvent::Reopen { .. } => {
+                eprintln!("🚀 Dock icon clicked (Reopen event)");
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    if let Ok(visible) = window.is_visible() {
+                        eprintln!("📊 Window visible status: {}", visible);
+                    }
+                    let _ = window.unminimize();
+                    let _ = position_window_centered(app_handle.clone());
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                    #[cfg(target_os = "macos")]
+                    let _ = app_handle.show();
+                    eprintln!("✅ Window should now be visible and focused");
+                }
+            }
+            _ => {}
+        });
 }

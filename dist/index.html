@@ -539,13 +539,53 @@
             border-color: rgba(100, 200, 255, 0.3);
             box-shadow: 0 0 40px rgba(100, 200, 255, 0.15);
         }
+
+        /* Window Controls (Traffic Lights) */
+        .window-controls {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+            /* Ensure they are clickable over the drag handle */
+            -webkit-app-region: no-drag;
+        }
+
+        .win-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.1s, opacity 0.1s;
+        }
+
+        .win-btn:hover {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        .win-btn.close {
+            background: #ff5f56;
+        }
+
+        .win-btn.minimize {
+            background: #ffbd2e;
+        }
     </style>
-  <script type="module" crossorigin src="./assets/index-AxSAmUjT.js"></script>
+  <script type="module" crossorigin src="./assets/index-DMSa9fw7.js"></script>
 </head>
 
 <body>
     <div class="app-shell">
         <div class="drag-handle"></div>
+
+        <div class="window-controls">
+            <button class="win-btn close" id="winClose" title="Close (Hide)"></button>
+            <button class="win-btn minimize" id="winMinimize" title="Minimize"></button>
+        </div>
 
         <div class="focus-banner" id="focusShieldBanner" hidden>
             <div style="display:flex; align-items:center; gap:10px;">
