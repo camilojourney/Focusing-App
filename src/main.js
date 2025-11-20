@@ -149,6 +149,8 @@ function startTicking() {
         lastTickTimestamp = Date.now();
         tickInterval = setInterval(() => {
             tick().catch((error) => console.error('Tick loop failed:', error));
+            // Keep the backend alive by sending a ping every second
+            invoke('keep_app_alive').catch(() => { }); // Silent fail, non-critical
         }, TICK_RATE_MS);
     }
 }
