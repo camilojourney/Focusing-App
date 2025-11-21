@@ -8,8 +8,7 @@ use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
-    sync::{Arc, Mutex},
-    time::Duration,
+    sync::Mutex,
 };
 
 use serde::{Deserialize, Serialize};
@@ -28,7 +27,6 @@ struct TrayPosition {
 
 struct AppState {
     tray_position: Mutex<Option<TrayPosition>>,
-    background_tick_handle: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -315,10 +313,8 @@ fn hide_window(window: tauri::WebviewWindow) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn keep_app_alive(app: AppHandle) -> Result<(), String> {
+fn keep_app_alive() -> Result<(), String> {
     // This command ensures the frontend is communicating with the backend regularly
-    // preventing any background task from stopping
-    eprintln!("✅ Frontend ping received - app is responsive");
     Ok(())
 }
 
@@ -326,7 +322,6 @@ fn main() {
     tauri::Builder::default()
         .manage(AppState {
             tray_position: Mutex::new(None),
-            background_tick_handle: Arc::new(Mutex::new(None)),
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
