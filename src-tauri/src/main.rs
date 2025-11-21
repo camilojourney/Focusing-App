@@ -15,7 +15,9 @@ use serde::{Deserialize, Serialize};
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{ActivationPolicy, AppHandle, Manager, PhysicalPosition};
+use tauri::{AppHandle, Manager, PhysicalPosition};
+#[cfg(target_os = "macos")]
+use tauri::ActivationPolicy;
 
 // Store the last known tray icon position
 struct TrayPosition {
@@ -464,8 +466,9 @@ fn main() {
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app_handle, event| match event {
-            tauri::RunEvent::Reopen { .. } => {
+        .run(|app_handle, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
                 eprintln!("🚀 Dock icon clicked (Reopen event)");
                 if let Some(window) = app_handle.get_webview_window("main") {
                     if let Ok(visible) = window.is_visible() {
@@ -475,11 +478,11 @@ fn main() {
                     let _ = position_window_centered(app_handle.clone());
                     let _ = window.show();
                     let _ = window.set_focus();
-                    #[cfg(target_os = "macos")]
                     let _ = app_handle.show();
                     eprintln!("✅ Window should now be visible and focused");
                 }
             }
-            _ => {}
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app_handle, event);
         });
 }
