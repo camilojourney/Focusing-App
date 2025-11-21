@@ -176,13 +176,16 @@ function deferCheckIn(now) {
 }
 
 function handleSystemSleep(deltaMs) {
-    console.log(`Sleep detected: ${Math.round(deltaMs / 1000)}s delay`);
-    if (isSessionRunning) {
+    console.log(`Large time gap detected: ${Math.round(deltaMs / 1000)}s delay`);
+    // Only pause for very long gaps (5+ minutes) which indicate actual sleep
+    // Short gaps are just window being hidden/throttled - don't pause for those
+    if (deltaMs > 5 * 60 * 1000 && isSessionRunning) {
         pauseSession({ reason: 'sleep' });
         statusOverride = `Paused: Mac was asleep for ${Math.round(deltaMs / 60000)} min`;
+        updateFocusShieldUi();
+        captureRemainingTimes();
     }
-    updateFocusShieldUi();
-    captureRemainingTimes();
+    // For shorter gaps, just continue - the timestamp-based timers will catch up
 }
 
 async function tick() {
@@ -521,10 +524,20 @@ function endWriteTime({ auto = false, status } = {}) {
 }
 
 function endSession() {
-    pauseSession();
-    stopTickingIfIdle(true);
-    alert('Session complete! Great work! 🎉');
-    resetSession();
+    // Reset session timers but keep running (continuous mode)
+    checkInsCompleted = 0;
+    skippedCheckIns = 0;
+    lastCheckInWasSkipped = false;
+    sessionTimeRemaining = settings.sessionDuration * 60;
+    checkInTimeRemaining = settings.checkInInterval * 60;
+
+    const now = Date.now();
+    sessionEndTimestamp = now + sessionTimeRemaining * 1000;
+    checkInEndTimestamp = now + checkInTimeRemaining * 1000;
+
+    statusOverride = 'New cycle started';
+    console.log('Session cycle complete, starting new cycle automatically');
+    updateDisplay();
 }
 
 function extendFocusShield() {
@@ -739,6 +752,15 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Auto-sync calendar on startup
     useCalendarEvent(true);
+
+    // Handle visibility changes - ensure timer keeps running when window becomes visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && isSessionRunning) {
+            console.log('Window became visible, ensuring timer is running');
+            // Force an immediate tick to catch up
+            tick().catch((error) => console.error('Visibility tick failed:', error));
+        }
+    });
 
     const unlisten = await listen('settings-updated', (event) => {
         if (event?.payload) {
