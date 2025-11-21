@@ -146,17 +146,23 @@ function captureRemainingTimes(now = Date.now()) {
 
 function startTicking() {
     if (!tickInterval) {
+        console.log('startTicking: Starting tick interval');
         lastTickTimestamp = Date.now();
         tickInterval = setInterval(() => {
             tick().catch((error) => console.error('Tick loop failed:', error));
             // Keep the backend alive by sending a ping every second
             invoke('keep_app_alive').catch(() => { }); // Silent fail, non-critical
         }, TICK_RATE_MS);
+    } else {
+        console.log('startTicking: Tick interval already running');
     }
 }
 
 function stopTickingIfIdle(force = false) {
-    if (tickInterval && (force || (!isSessionRunning && !isWriting && !focusShieldActive))) {
+    const shouldStop = force || (!isSessionRunning && !isWriting && !focusShieldActive);
+    console.log('stopTickingIfIdle:', { force, isSessionRunning, isWriting, focusShieldActive, shouldStop, hasInterval: !!tickInterval });
+    if (tickInterval && shouldStop) {
+        console.log('stopTickingIfIdle: Clearing tick interval');
         clearInterval(tickInterval);
         tickInterval = null;
         lastTickTimestamp = null;
@@ -418,6 +424,7 @@ function resetSession() {
 }
 
 async function triggerCheckIn({ forced = false } = {}) {
+    console.log('triggerCheckIn: Starting check-in #' + (checkInsCompleted + 1));
     const now = Date.now();
     if (!forced && shouldDeferCheckIn(now)) {
         deferCheckIn(now);
@@ -425,6 +432,10 @@ async function triggerCheckIn({ forced = false } = {}) {
     }
 
     captureRemainingTimes(now);
+
+    // Set isWriting BEFORE pausing to prevent stopTickingIfIdle from killing the interval
+    isWriting = true;
+    console.log('triggerCheckIn: Set isWriting=true BEFORE pauseSession');
     pauseSession({ reason: 'check-in' });
 
     try {
@@ -438,7 +449,7 @@ async function triggerCheckIn({ forced = false } = {}) {
 
     showCheckInScreen();
 
-    isWriting = true;
+    // isWriting already set to true above (before pauseSession)
     writeTimeRemaining = settings.writeTime;
     writeEndTimestamp = Date.now() + settings.writeTime * 1000;
     checkInsCompleted += 1;
@@ -505,7 +516,8 @@ async function handleCheckInResponse(status, options = {}) {
     endWriteTime({ auto: options.auto, status });
 }
 
-function endWriteTime({ auto = false, status } = {}) {
+async function endWriteTime({ auto = false, status } = {}) {
+    console.log('endWriteTime called, isSessionRunning before:', isSessionRunning);
     isWriting = false;
     writeEndTimestamp = null;
     writeTimeRemaining = 0;
@@ -520,7 +532,8 @@ function endWriteTime({ auto = false, status } = {}) {
     else statusOverride = 'Session active';
 
     updateDisplay();
-    startSession();
+    await startSession({ autoHide: false }); // Don't auto-hide, already hidden
+    console.log('endWriteTime done, isSessionRunning after:', isSessionRunning, 'tickInterval:', !!tickInterval);
 }
 
 function endSession() {
