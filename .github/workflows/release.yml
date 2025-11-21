@@ -44,7 +44,9 @@ jobs:
       - name: Build Tauri app (macOS)
         if: matrix.platform == 'macos-latest'
         run: |
-          pnpm tauri build --target universal-apple-darwin
+          pnpm tauri build
+          # Ad-hoc sign to prevent "damaged" error
+          codesign --force --deep --sign - "src-tauri/target/release/bundle/macos/Hyper Awareness.app"
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
@@ -62,8 +64,7 @@ jobs:
         with:
           name: macos-build
           path: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
+            src-tauri/target/release/bundle/dmg/*.dmg
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
