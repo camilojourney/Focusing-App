@@ -1,11 +1,21 @@
 # Hyper Awareness (Focus Time)
 
-A macOS menu bar focus timer application designed to help you maintain deep work sessions with periodic check-ins and reflection breaks.
+A menu bar focus timer application designed to help you maintain deep work sessions with periodic check-ins and reflection breaks.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)
-![Tauri](https://img.shields.io/badge/Tauri-v2.1.0-brightgreen.svg)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
+![Tauri](https://img.shields.io/badge/Tauri-v2.9.3-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1.0%20Production-success.svg)
+
+## 📥 Download
+
+**Latest Release:** [v1.0.0](https://github.com/camilojourney/Focusing-App/releases/latest)
+
+- **macOS** (10.13+): [Download DMG](https://github.com/camilojourney/Focusing-App/releases/latest/download/Hyper-Awareness_1.0.0_universal.dmg)
+  - Universal Binary (Intel + Apple Silicon)
+- **Windows** (10+): [Download Installer](https://github.com/camilojourney/Focusing-App/releases/latest/download/Hyper-Awareness_1.0.0_x64-setup.exe)
+
+> **Note:** These are unsigned installers. On macOS, right-click → Open. On Windows, click "More info" → "Run anyway".
 
 ## Overview
 
