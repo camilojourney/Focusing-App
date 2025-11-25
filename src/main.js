@@ -523,20 +523,35 @@ async function endWriteTime({ auto = false, status } = {}) {
     writeTimeRemaining = 0;
     hideCheckInScreen();
 
+    // CRITICAL: Reset check-in timer for the NEXT check-in
+    // This needs to happen BEFORE resuming the session
     checkInTimeRemaining = settings.checkInInterval * 60;
     const now = Date.now();
     checkInEndTimestamp = now + checkInTimeRemaining * 1000;
+
+    // CRITICAL: Re-establish session timer
+    // The session is still running in the background, we just need to resume ticking
+    if (sessionTimeRemaining > 0) {
+        sessionEndTimestamp = now + sessionTimeRemaining * 1000;
+    }
 
     if (auto) statusOverride = 'Skipped';
     else if (status) statusOverride = `Logged: ${status}`;
     else statusOverride = 'Session active';
 
-    updateDisplay();
-    await startSession({ autoHide: false }); // Don't auto-hide, already hidden
-    console.log('endWriteTime done, isSessionRunning after:', isSessionRunning, 'tickInterval:', !!tickInterval);
-}
+    // Ensure the main screen is visible
+    if (dom.mainScreen) {
+        dom.mainScreen.classList.remove('hidden');
+    }
 
-function endSession() {
+    updateDisplay();
+
+    // Resume the session (restart ticking)
+    isSessionRunning = true;
+    startTicking();
+
+    console.log('endWriteTime done, isSessionRunning after:', isSessionRunning, 'checkInEndTimestamp:', new Date(checkInEndTimestamp).toLocaleTimeString(), 'sessionEndTimestamp:', new Date(sessionEndTimestamp).toLocaleTimeString());
+} function endSession() {
     // Reset session timers but keep running (continuous mode)
     checkInsCompleted = 0;
     skippedCheckIns = 0;
