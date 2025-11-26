@@ -790,6 +790,32 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // Listen for settings updates from settings window
+    async function setupSettingsListener() {
+        try {
+            await listen('settings-updated', async (event) => {
+                console.log('Settings updated event received:', event.payload);
+                currentSettings = event.payload;
+
+                // Update timer display if not currently running
+                const startBtn = document.getElementById('startBtn');
+                const isIdle = startBtn.textContent === 'Start Focus';
+
+                if (isIdle) {
+                    const minutes = event.payload.check_in_interval;
+                    document.getElementById('timer').textContent = `${String(minutes).padStart(2, '0')}:00`;
+                    console.log('Timer display updated to:', minutes, 'minutes');
+                } else {
+                    console.log('Timer is running, settings will apply on next session');
+                }
+            });
+        } catch (error) {
+            console.error('Failed to setup settings listener:', error);
+        }
+    }
+
+    setupSettingsListener();
+
     const unlisten = await listen('settings-updated', (event) => {
         if (event?.payload) {
             const payload = event.payload;

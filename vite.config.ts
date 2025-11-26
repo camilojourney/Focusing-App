@@ -18,6 +18,12 @@ export default defineConfig(() => ({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    target: ['es2021', 'chrome100', 'safari13']
+    target: ['es2021', 'chrome100', 'safari13'],
+    rollupOptions: {
+      input: {
+        main: 'src/index.html',
+        settings: 'src/settings.html'
+      }
+    }
   }
 }));

@@ -12,7 +12,6 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, PhysicalPosition};
@@ -353,7 +352,7 @@ fn main() {
             _ => {}
         })
         .setup(|app| {
-            // Use Regular activation policy to show in Dock
+            // Use Regular activation policy to show in both Dock and menu bar
             #[cfg(target_os = "macos")]
             {
                 app.set_activation_policy(ActivationPolicy::Regular);
@@ -378,24 +377,20 @@ fn main() {
             )?;
 
             eprintln!("🛠️ Building tray icon...");
-            // Load smaller tray icon (22x22) - closer to v1's 18x18
-            let icon_bytes = include_bytes!("../icons/tray-22x22.png");
-            let image = image::load_from_memory(icon_bytes).map_err(|e| e.to_string())?.into_rgba8();
-            let (width, height) = image.dimensions();
-            let rgba = image.into_raw();
 
-            let icon = Image::new(&rgba, width, height);
-            eprintln!("✅ Icon loaded successfully ({}x{})", width, height);
+            // Try using the default app icon first for testing
+            let icon = app.default_window_icon().unwrap().clone();
+            eprintln!("✅ Icon loaded from default_window_icon");
 
             // Build tray with icon and menu attached
             eprintln!("🔨 Building TrayIconBuilder...");
             let tray_result = TrayIconBuilder::with_id("main")
-                .tooltip("Hyper Awareness")
-                .title(&initial_time)
                 .icon(icon)
-                .icon_as_template(true) // Use template mode like working v1 version
-                .menu(&_menu) // Attach the menu to the tray
-                .show_menu_on_left_click(false) // Prevent menu from opening on left click
+                .icon_as_template(true) // Let macOS handle dark/light mode coloring
+                .title(&initial_time) // Shows timer text in menu bar
+                .tooltip("Hyper Awareness")
+                .menu(&_menu)
+                .show_menu_on_left_click(false) // Left click toggles window, right click shows menu
                 .on_tray_icon_event(move |tray, event| {
                     eprintln!("🖱️ Tray event received: {:?}", event);
                     let app = tray.app_handle();
