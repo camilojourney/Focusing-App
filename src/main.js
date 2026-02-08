@@ -40,6 +40,9 @@ const TICK_RATE_MS = 1000;
 const SLEEP_THRESHOLD_MS = 60_000;
 const FOCUS_SHIELD_EXTENSION_MINUTES = 15;
 
+// Use a more aggressive tick rate when window is hidden to combat browser throttling
+let aggressiveTickInterval = null;
+
 async function ensureTauriReady() {
     if (invoke && listen && emit && appWindow) {
         return;
@@ -196,6 +199,18 @@ function handleSystemSleep(deltaMs) {
 
 async function tick() {
     const now = Date.now();
+
+    // Debug: Log when check-in is approaching
+    if (isSessionRunning && checkInEndTimestamp) {
+        const timeUntilCheckIn = checkInEndTimestamp - now;
+        if (timeUntilCheckIn <= 5000 && timeUntilCheckIn > 0) {
+            console.log(`⏰ Check-in in ${Math.ceil(timeUntilCheckIn / 1000)}s`);
+        }
+        if (timeUntilCheckIn <= 0) {
+            console.log('🔔 CHECK-IN TIME REACHED! Triggering check-in...');
+        }
+    }
+
     if (lastTickTimestamp) {
         const delta = now - lastTickTimestamp;
         if (delta > SLEEP_THRESHOLD_MS) {
@@ -424,9 +439,10 @@ function resetSession() {
 }
 
 async function triggerCheckIn({ forced = false } = {}) {
-    console.log('triggerCheckIn: Starting check-in #' + (checkInsCompleted + 1));
+    console.log('🔔 triggerCheckIn: Starting check-in #' + (checkInsCompleted + 1));
     const now = Date.now();
     if (!forced && shouldDeferCheckIn(now)) {
+        console.log('🛡️ Check-in deferred due to Focus Shield');
         deferCheckIn(now);
         return;
     }
@@ -439,12 +455,16 @@ async function triggerCheckIn({ forced = false } = {}) {
     pauseSession({ reason: 'check-in' });
 
     try {
+        console.log('📍 Positioning and showing window...');
         // Center the window for check-in prompts
         await invoke('position_window_centered');
+        console.log('✅ Window positioned');
         await appWindow.show();
+        console.log('✅ Window show() called');
         await appWindow.setFocus();
+        console.log('✅ Window setFocus() called');
     } catch (error) {
-        console.error('Failed to show window:', error);
+        console.error('❌ Failed to show window:', error);
     }
 
     showCheckInScreen();
@@ -457,6 +477,7 @@ async function triggerCheckIn({ forced = false } = {}) {
 
     startTicking();
     updateDisplay();
+    console.log('🔔 Check-in screen should now be visible!');
 }
 
 function showCheckInScreen() {
