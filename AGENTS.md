@@ -57,7 +57,7 @@ specs/
 - **Frontend:** Vanilla HTML/CSS/JavaScript authored in `src/`. No React, Vue, bundlers, or CSS frameworks unless a spec explicitly allows an incremental library.
 - **Backend:** Rust commands in `src-tauri/src/*.rs`, exposed via `tauri::command`. Use `Result<T, String>` for UI-safe error propagation.
 - **Storage:** Local JSON or JSONL files inside Tauri's app config directory (see `src-tauri/src/main.rs:log_check_in`). Never write outside this sandbox or introduce network sync without executive approval.
-- **Tooling:** `pnpm run dev` / `pnpm run build` (Tauri CLI) and `cargo` for Rust. Python 3.11+ scripts may live under project root for offline analysis only.
+- **Tooling:** `pnpm run dev` / `pnpm run build` (Tauri CLI) and `cargo` for Rust. Python 3.11+ scripts may live under project root for offline analysis only. Commit `pnpm-lock.yaml` and install with `pnpm install --frozen-lockfile` (see `.github/workflows/build.yml`). Generate that lockfile with pnpm 8 so it matches CI. Keep `@tauri-apps/api` on the same major.minor as the `tauri` crate in `src-tauri/Cargo.lock`; `scripts/check-tauri-versions.js` fails the build if they diverge.
 
 ### Tauri 2 Specific Requirements
 - **Window Focus:** Use `ActivationPolicy::Regular` (not `Accessory`) for interactive windows. See `specs/006-menu-bar-integration.md` section 12 for why.
@@ -106,4 +106,11 @@ specs/
 - Never ship experimental files (like `src/test.html`) as part of the production menu bar UI. Specs should label any throwaway artifacts so AI assistants ignore them.
 - Avoid speculative dependencies. If a problem can be solved with the standard library (Rust) or platform APIs (Tauri), do so.
 
-_Last updated: 2025-11-07. When the stack or rules change materially, bump this note and describe the delta in `docs/DOCUMENT_OF_TRUTH.md`._
+_Last updated: 2026-08-13. When the stack or rules change materially, bump this note and describe the delta in `docs/DOCUMENT_OF_TRUTH.md`._
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.

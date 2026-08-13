@@ -5,15 +5,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "check:tauri-versions": "node scripts/check-tauri-versions.js"
   },
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "2.9.5",
     "vite": "^7.2.2"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.0"
+    "@tauri-apps/api": "2.9.1"
   }
 }
