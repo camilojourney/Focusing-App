@@ -213,6 +213,17 @@ pnpm tauri build
 
 Quit the currently running app before manually opening the newly built bundle from `src-tauri/target/release/bundle/`. Existing local settings, activity history, and recoverable active-session state remain in the app configuration directory; do not overwrite or delete that directory during an update.
 
+### Local macOS update and rollback
+
+This is a manual, approval-gated procedure. Do not replace an installed app until the reviewed PR revision, rendered native-app check, and focused checks are approved by the release authority.
+
+1. Build the candidate with the commands above. This does not install it.
+2. After approval, quit the installed app and copy its existing `.app` bundle to a clearly named rollback location on the same volume. Verify that copy exists before replacing the installed bundle.
+3. Manually copy the reviewed bundle into the chosen application location. Do not delete, copy, edit, or migrate the app configuration directory or its local activity data.
+4. Launch the new bundle and perform the approved smoke check. If it fails, quit it and restore the rollback bundle before relaunching.
+
+A local bundle replacement is a machine-specific divergence, not an upstream behavior change. Record the reviewed source revision and reason in the associated PR or commit before performing it; do not add installed bundles or user data to the repository. No local installation is performed by this repository's build commands.
+
 5. Build for production:
 
    ```bash
