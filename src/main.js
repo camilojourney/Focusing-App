@@ -899,7 +899,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         winMinimize.addEventListener('click', async () => {
             try {
                 await ensureTauriReady();
-                await appWindow.minimize();
+                await invoke('minimize_main_window');
             } catch (e) { console.error('Failed to minimize window:', e); }
         });
     }
