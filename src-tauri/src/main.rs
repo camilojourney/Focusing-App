@@ -24,6 +24,7 @@ struct TrayPosition {
 
 struct AppState {
     tray_position: Mutex<Option<TrayPosition>>,
+    suppress_next_main_window_focus_hide: Mutex<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,6 +82,8 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
 
 #[tauri::command]
 fn open_settings(app: AppHandle) -> Result<(), String> {
+    suppress_main_window_focus_hide_if_focused(&app);
+
     if let Some(window) = app.get_webview_window("settings") {
         window.show().map_err(|e| e.to_string())?;
         window.set_focus().map_err(|e| e.to_string())?;
@@ -320,15 +323,58 @@ fn hide_window(window: tauri::WebviewWindow) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn minimize_main_window(app: AppHandle, window: tauri::WebviewWindow) -> Result<(), String> {
+    suppress_next_main_window_focus_hide(&app);
+    window.minimize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn keep_app_alive() -> Result<(), String> {
     // This command ensures the frontend is communicating with the backend regularly
     Ok(())
+}
+
+fn suppress_next_main_window_focus_hide(app: &AppHandle) {
+    *app.state::<AppState>()
+        .suppress_next_main_window_focus_hide
+        .lock()
+        .unwrap() = true;
+}
+
+fn suppress_main_window_focus_hide_if_focused(app: &AppHandle) {
+    let main_window_is_focused = app
+        .get_webview_window("main")
+        .and_then(|window| window.is_focused().ok())
+        .unwrap_or(false);
+
+    if main_window_is_focused {
+        suppress_next_main_window_focus_hide(app);
+    }
+}
+
+fn take_main_window_focus_hide_suppression(app: &AppHandle) -> bool {
+    std::mem::take(
+        &mut *app
+            .state::<AppState>()
+            .suppress_next_main_window_focus_hide
+            .lock()
+            .unwrap(),
+    )
+}
+
+fn should_hide_main_window_on_focus_loss(
+    window_label: &str,
+    focused: bool,
+    suppress_hide: bool,
+) -> bool {
+    window_label == "main" && !focused && !suppress_hide
 }
 
 fn main() {
     tauri::Builder::default()
         .manage(AppState {
             tray_position: Mutex::new(None),
+            suppress_next_main_window_focus_hide: Mutex::new(false),
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
@@ -348,13 +394,21 @@ fn main() {
             }
             _ => {}
         })
-        // Add this block to prevent the app from quitting on window close
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+        // Keep the timer's webview alive when the main window is dismissed.
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
                 eprintln!("🏃 Window close requested, hiding window to keep app alive.");
                 api.prevent_close();
-                window.hide().unwrap();
+                let _ = window.hide();
             }
+            tauri::WindowEvent::Focused(false) if window.label() == "main" => {
+                let suppress_hide = take_main_window_focus_hide_suppression(window.app_handle());
+                if should_hide_main_window_on_focus_loss("main", false, suppress_hide) {
+                    eprintln!("👋 Main window lost focus, hiding it while the session keeps running.");
+                    let _ = window.hide();
+                }
+            }
+            _ => {}
         })
         .setup(|app| {
             // Use Regular activation policy to show in both Dock and menu bar
@@ -402,12 +456,29 @@ fn main() {
                     let state = app.state::<AppState>();
 
                     if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
+                        button,
+                        button_state,
                         position,
                         ..
                     } = event
                     {
+                        if button_state == MouseButtonState::Down
+                            && matches!(button, MouseButton::Left | MouseButton::Right)
+                        {
+                            suppress_main_window_focus_hide_if_focused(app);
+                            return;
+                        }
+
+                        if button == MouseButton::Right && button_state == MouseButtonState::Up {
+                            *state.suppress_next_main_window_focus_hide.lock().unwrap() = false;
+                            return;
+                        }
+
+                        if button != MouseButton::Left || button_state != MouseButtonState::Up {
+                            return;
+                        }
+
+                        *state.suppress_next_main_window_focus_hide.lock().unwrap() = false;
                         eprintln!("✅ Left click detected at position: {:?}", position);
                         *state.tray_position.lock().unwrap() = Some(TrayPosition {
                             x: position.x,
@@ -456,6 +527,7 @@ fn main() {
             position_window_at_top,
             position_window_centered,
             hide_window,
+            minimize_main_window,
             log_check_in,
             save_active_session,
             recover_active_session,
@@ -487,4 +559,23 @@ fn main() {
             #[cfg(not(target_os = "macos"))]
             let _ = (app_handle, event);
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_hide_main_window_on_focus_loss;
+
+    #[test]
+    fn main_window_hides_on_focus_loss_without_closing_its_webview() {
+        assert!(should_hide_main_window_on_focus_loss("main", false, false));
+        assert!(!should_hide_main_window_on_focus_loss("main", true, false));
+        assert!(!should_hide_main_window_on_focus_loss(
+            "settings", false, false
+        ));
+    }
+
+    #[test]
+    fn main_window_stays_visible_while_focus_moves_to_tray_settings_or_minimize() {
+        assert!(!should_hide_main_window_on_focus_loss("main", false, true));
+    }
 }
