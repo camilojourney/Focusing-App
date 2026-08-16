@@ -1,6 +1,6 @@
 # Hyper Awareness (Focus Time)
 
-A menu bar focus timer application designed to help you maintain deep work sessions with periodic check-ins and reflection breaks.
+A configurable, local-first menu bar productivity timer for intentional work sessions, periodic check-ins, and reflection breaks. It supports personal workflows but does not provide health, wellbeing, or performance guarantees.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -27,7 +27,7 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 
 #### Core Functionality
 - 🧠 **Session Goal Tracking**: Set your intention at the start of each session
-- ✅ **Interactive Check-ins**: Report what you're actually doing at each check-in point (every 15 min)
+- ✅ **Interactive Check-ins**: Report what you're actually doing at each check-in point (default: every 20 min)
 - 🎯 **Cognitive Awareness**: See your goal displayed when checking in - creates powerful metacognition
 - 📅 **Calendar Integration**: Automatically detects current calendar events to help contextualize your focus
 - 📊 **Session Review**: Timeline visualization of your focus patterns with statistics
@@ -46,6 +46,8 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 - 🔒 **Privacy First**: All data stored locally only - no cloud sync, complete privacy
 - ⚙️ **Customizable Intervals**: Adjust session duration, check-in frequency, and write time
 - 💾 **Persistent Settings**: Your preferences are saved between sessions
+- ♻️ **Restart Recovery**: Interrupted active sessions are preserved locally and require an explicit resume
+- ⓘ **Data Status**: Metadata-only diagnostics report recoverable journal issues without displaying activity content
 
 ## How It Works
 
@@ -54,7 +56,7 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 1. **Launch App**: Click brain icon in menu bar
 2. **Set Your Goal**: Enter what you want to accomplish (or use 📅 Event button for current meeting)
 3. **Start Session**: Click "Start Focus" - window hides, timer runs in background
-4. **Check-in Triggered**: When the check-in interval is reached (default: 15 minutes):
+4. **Check-in Triggered**: When the check-in interval is reached (default: 20 minutes):
    - Session automatically pauses
    - Window appears **centered on screen**
    - Check-in screen shows your goal
@@ -80,7 +82,7 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 ### Default Settings
 
 - **Session Duration**: 720 minutes (12 hours)
-- **Check-in Interval**: 15 minutes
+- **Check-in Interval**: 20 minutes
 - **Write Time**: 20 seconds
 - **Window Position**: Auto (centered on check-ins)
 
@@ -181,10 +183,10 @@ Focusing-App/
    export PATH="$HOME/.cargo/bin:$PATH"
    ```
 
-3. Install pnpm dependencies:
+3. Install pnpm dependencies reproducibly:
 
    ```bash
-   pnpm install
+   pnpm install --frozen-lockfile
    ```
 
 4. Run in development mode:
@@ -198,6 +200,18 @@ Focusing-App/
    ```bash
    source $HOME/.cargo/env
    ```
+
+### Build and update safely
+
+Build a release candidate without replacing any installed copy:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm tauri build
+```
+
+Quit the currently running app before manually opening the newly built bundle from `src-tauri/target/release/bundle/`. Existing local settings, activity history, and recoverable active-session state remain in the app configuration directory; do not overwrite or delete that directory during an update.
 
 5. Build for production:
 

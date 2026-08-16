@@ -3,20 +3,16 @@
 
 mod calendar;
 mod logs;
+mod session_state;
 
-use std::{
-    fs::{self, OpenOptions},
-    io::Write,
-    path::PathBuf,
-    sync::Mutex,
-};
+use std::{fs, path::PathBuf, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition};
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
+use tauri::{AppHandle, Manager, PhysicalPosition};
 
 // Store the last known tray icon position
 struct TrayPosition {
@@ -42,7 +38,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             session_duration: 720,
-            check_in_interval: 15,
+            check_in_interval: 20,
             write_time: 20,
             window_position: "auto".to_string(),
         }
@@ -71,13 +67,6 @@ fn save_settings_file(app: &AppHandle, settings: &Settings) -> Result<(), String
     let path = settings_path(app)?;
     let data = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
     fs::write(path, data).map_err(|e| e.to_string())
-}
-
-fn log_file_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let mut path = app.path().app_config_dir().map_err(|e| e.to_string())?;
-    fs::create_dir_all(&path).map_err(|e| e.to_string())?;
-    path.push("focus_log.jsonl");
-    Ok(path)
 }
 
 #[tauri::command]
@@ -227,7 +216,7 @@ fn position_window_at_top(app: AppHandle) -> Result<(), String> {
             let settings = load_settings(&app).unwrap_or_default();
             if let Ok(Some(monitor)) = window.current_monitor() {
                 let monitor_size = monitor.size();
-                let (x, y) = calculate_window_position(&settings, &monitor_size);
+                let (x, y) = calculate_window_position(&settings, monitor_size);
                 window
                     .set_position(tauri::Position::Physical(PhysicalPosition { x, y }))
                     .map_err(|e| e.to_string())?;
@@ -249,8 +238,12 @@ fn position_window_centered(app: AppHandle) -> Result<(), String> {
             let window_height = 500.0;
 
             // Calculate center position in logical pixels
-            let center_x = monitor_frame.x as f64 + (monitor_size.width as f64 / scale_factor) / 2.0 - (window_width / 2.0);
-            let center_y = monitor_frame.y as f64 + (monitor_size.height as f64 / scale_factor) / 2.0 - (window_height / 2.0);
+            let center_x = monitor_frame.x as f64
+                + (monitor_size.width as f64 / scale_factor) / 2.0
+                - (window_width / 2.0);
+            let center_y = monitor_frame.y as f64
+                + (monitor_size.height as f64 / scale_factor) / 2.0
+                - (window_height / 2.0);
 
             eprintln!("📍 Centering window at ({}, {})", center_x, center_y);
 
@@ -267,19 +260,32 @@ fn position_window_centered(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn log_check_in(app: AppHandle, log_line: String) -> Result<(), String> {
-    let path = log_file_path(&app)?;
+    logs::append_entry(&app, &log_line)
+}
 
-    // Open file in append mode (create if doesn't exist)
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .map_err(|e| e.to_string())?;
+#[tauri::command]
+fn save_active_session(
+    app: AppHandle,
+    state: session_state::ActiveSessionState,
+) -> Result<(), String> {
+    session_state::save(&app, state)
+}
 
-    // Write the JSON line with a newline
-    writeln!(file, "{}", log_line).map_err(|e| e.to_string())?;
+#[tauri::command]
+fn recover_active_session(
+    app: AppHandle,
+) -> Result<Option<session_state::ActiveSessionState>, String> {
+    session_state::recover(&app)
+}
 
-    Ok(())
+#[tauri::command]
+fn clear_active_session(app: AppHandle) -> Result<(), String> {
+    session_state::clear(&app)
+}
+
+#[tauri::command]
+fn get_persistence_diagnostics(app: AppHandle) -> Result<logs::LogDiagnostics, String> {
+    logs::diagnostics(&app)
 }
 
 #[tauri::command]
@@ -343,13 +349,12 @@ fn main() {
             _ => {}
         })
         // Add this block to prevent the app from quitting on window close
-        .on_window_event(|window, event| match event {
-            tauri::WindowEvent::CloseRequested { api, .. } => {
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 eprintln!("🏃 Window close requested, hiding window to keep app alive.");
                 api.prevent_close();
                 window.hide().unwrap();
             }
-            _ => {}
         })
         .setup(|app| {
             // Use Regular activation policy to show in both Dock and menu bar
@@ -396,37 +401,35 @@ fn main() {
                     let app = tray.app_handle();
                     let state = app.state::<AppState>();
 
-                    match event {
-                        TrayIconEvent::Click {
-                            button: MouseButton::Left,
-                            button_state: MouseButtonState::Up,
-                            position,
-                            ..
-                        } => {
-                            eprintln!("✅ Left click detected at position: {:?}", position);
-                            *state.tray_position.lock().unwrap() = Some(TrayPosition {
-                                x: position.x,
-                                y: position.y,
-                                _width: 22.0,
-                                _height: 22.0,
-                            });
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        position,
+                        ..
+                    } = event
+                    {
+                        eprintln!("✅ Left click detected at position: {:?}", position);
+                        *state.tray_position.lock().unwrap() = Some(TrayPosition {
+                            x: position.x,
+                            y: position.y,
+                            _width: 22.0,
+                            _height: 22.0,
+                        });
 
-                            if let Some(window) = app.get_webview_window("main") {
-                                if window.is_visible().unwrap_or(false) {
-                                    let _ = window.hide();
-                                } else {
-                                    // CRITICAL: Unminimize and activate app for proper window focus in builds
-                                    let _ = window.unminimize();
-                                    let _ = position_window_at_top(app.clone());
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                    // Force app to foreground on macOS
-                                    #[cfg(target_os = "macos")]
-                                    let _ = app.show();
-                                }
+                        if let Some(window) = app.get_webview_window("main") {
+                            if window.is_visible().unwrap_or(false) {
+                                let _ = window.hide();
+                            } else {
+                                // CRITICAL: Unminimize and activate app for proper window focus in builds
+                                let _ = window.unminimize();
+                                let _ = position_window_at_top(app.clone());
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                // Force app to foreground on macOS
+                                #[cfg(target_os = "macos")]
+                                let _ = app.show();
                             }
                         }
-                        _ => {}
                     }
                 })
                 .build(app);
@@ -454,6 +457,10 @@ fn main() {
             position_window_centered,
             hide_window,
             log_check_in,
+            save_active_session,
+            recover_active_session,
+            clear_active_session,
+            get_persistence_diagnostics,
             get_current_event,
             request_calendar_permission,
             list_session_entries,
