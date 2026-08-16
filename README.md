@@ -1,6 +1,6 @@
 # Hyper Awareness (Focus Time)
 
-A menu bar focus timer application designed to help you maintain deep work sessions with periodic check-ins and reflection breaks.
+A configurable, local-first menu bar productivity timer for intentional work sessions, periodic check-ins, and reflection breaks. It supports personal workflows but does not provide health, wellbeing, or performance guarantees.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -27,7 +27,7 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 
 #### Core Functionality
 - 🧠 **Session Goal Tracking**: Set your intention at the start of each session
-- ✅ **Interactive Check-ins**: Report what you're actually doing at each check-in point (every 15 min)
+- ✅ **Interactive Check-ins**: Report what you're actually doing at each check-in point (default: every 20 min)
 - 🎯 **Cognitive Awareness**: See your goal displayed when checking in - creates powerful metacognition
 - 📅 **Calendar Integration**: Automatically detects current calendar events to help contextualize your focus
 - 📊 **Session Review**: Timeline visualization of your focus patterns with statistics
@@ -46,6 +46,8 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 - 🔒 **Privacy First**: All data stored locally only - no cloud sync, complete privacy
 - ⚙️ **Customizable Intervals**: Adjust session duration, check-in frequency, and write time
 - 💾 **Persistent Settings**: Your preferences are saved between sessions
+- ♻️ **Restart Recovery**: Interrupted active sessions are preserved locally and require an explicit resume
+- ⓘ **Data Status**: Metadata-only diagnostics report recoverable journal issues without displaying activity content
 
 ## How It Works
 
@@ -54,7 +56,7 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 1. **Launch App**: Click brain icon in menu bar
 2. **Set Your Goal**: Enter what you want to accomplish (or use 📅 Event button for current meeting)
 3. **Start Session**: Click "Start Focus" - window hides, timer runs in background
-4. **Check-in Triggered**: When the check-in interval is reached (default: 15 minutes):
+4. **Check-in Triggered**: When the check-in interval is reached (default: 20 minutes):
    - Session automatically pauses
    - Window appears **centered on screen**
    - Check-in screen shows your goal
@@ -80,7 +82,7 @@ A menu bar focus timer application designed to help you maintain deep work sessi
 ### Default Settings
 
 - **Session Duration**: 720 minutes (12 hours)
-- **Check-in Interval**: 15 minutes
+- **Check-in Interval**: 20 minutes
 - **Write Time**: 20 seconds
 - **Window Position**: Auto (centered on check-ins)
 
@@ -181,10 +183,10 @@ Focusing-App/
    export PATH="$HOME/.cargo/bin:$PATH"
    ```
 
-3. Install pnpm dependencies:
+3. Install pnpm dependencies reproducibly:
 
    ```bash
-   pnpm install
+   pnpm install --frozen-lockfile
    ```
 
 4. Run in development mode:
@@ -198,6 +200,29 @@ Focusing-App/
    ```bash
    source $HOME/.cargo/env
    ```
+
+### Build and update safely
+
+Build a release candidate without replacing any installed copy:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm tauri build
+```
+
+Quit the currently running app before manually opening the newly built bundle from `src-tauri/target/release/bundle/`. Existing local settings, activity history, and recoverable active-session state remain in the app configuration directory; do not overwrite or delete that directory during an update.
+
+### Local macOS update and rollback
+
+This is a manual, approval-gated procedure. Do not replace an installed app until the reviewed PR revision, rendered native-app check, and focused checks are approved by the release authority.
+
+1. Build the candidate with the commands above. This does not install it.
+2. After approval, quit the installed app and copy its existing `.app` bundle to a clearly named rollback location on the same volume. Verify that copy exists before replacing the installed bundle.
+3. Manually copy the reviewed bundle into the chosen application location. Do not delete, copy, edit, or migrate the app configuration directory or its local activity data.
+4. Launch the new bundle and perform the approved smoke check. If it fails, quit it and restore the rollback bundle before relaunching.
+
+A local bundle replacement is a machine-specific divergence, not an upstream behavior change. Record the reviewed source revision and reason in the associated PR or commit before performing it; do not add installed bundles or user data to the repository. No local installation is performed by this repository's build commands.
 
 5. Build for production:
 
@@ -247,12 +272,16 @@ After launching **Hyper Awareness**, you'll see a brain icon (🧠) in your macO
 6. **Auto-Resume**: After you respond, the window hides and the session continues automatically
 7. **Review Anytime**: Click 📊 **Review** to see your session timeline and focus statistics
 
+### Local Review and User-Controlled Export
+
+The Review panel reads the local journal only when you open it. Activity data remains on the device: the app does not automatically export, copy, upload, analyze externally, or send it over the network. The JSONL journal stays user-controlled, so exporting it to another tool is a deliberate manual action you choose outside the app.
+
 ### Configuring Settings
 
 1. Click ⚙️ **Settings** button or access from the tray menu
 2. Adjust your preferences:
    - **Session Duration**: Total focus time in minutes (default: 720 = 12 hours)
-   - **Check-in Interval**: How often to check in (default: 15 minutes)
+   - **Check-in Interval**: How often to check in (default: 20 minutes)
    - **Write Time**: How long you have to respond (default: 20 seconds)
    - **Window Position**: Auto (recommended) or Manual positioning
 3. Click "💾 Save Settings" to apply changes
@@ -303,7 +332,7 @@ The frontend (`src/`) manages UI and user interaction:
 **Session Review** (`js/sessionReview.js`):
 - **Timeline Visualization**: Display all check-ins in chronological order
 - **Statistics**: Calculate focus score, distraction breakdown, time analysis
-- **Export**: Copy session data to clipboard for further analysis
+- **User-Controlled Boundary**: Opens local data only on request; any JSONL export is a manual action outside the app, with no automatic transfer
 
 **State Management:**
 
@@ -527,6 +556,8 @@ Focus Time is ideal for:
 After using Focus Time for a while, you can analyze your focus patterns using the logged data.
 
 ### Viewing Your Data
+
+The journal is local and user-controlled. Viewing, copying, or importing it into another tool is an explicit action you take; Hyper Awareness does not initiate exports or transfers.
 
 ```bash
 # macOS - view your log file

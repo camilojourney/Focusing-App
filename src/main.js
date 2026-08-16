@@ -1,4 +1,11 @@
 import { waitForTauriBridge } from './tauri-bridge.js';
+import {
+    DEFAULT_TIMER_SETTINGS,
+    applySettingsUpdate,
+    captureTimerRemainders,
+    recoveredSessionSnapshot,
+    resumeTimerDeadlines
+} from './js/timer-state.mjs';
 import './js/sessionReview.js';
 
 // Create shortcuts for convenience (assigned after Tauri bridge is ready)
@@ -8,11 +15,7 @@ let emit;
 let appWindow;
 const dom = {};
 
-let settings = {
-    sessionDuration: 720,
-    checkInInterval: 15,
-    writeTime: 20
-};
+let settings = { ...DEFAULT_TIMER_SETTINGS };
 
 let sessionTimeRemaining = settings.sessionDuration * 60;
 let checkInTimeRemaining = settings.checkInInterval * 60;
@@ -32,12 +35,16 @@ let calendarRefreshInterval = null;
 
 let focusShieldActive = false;
 let focusShieldUntil = null;
+let sessionStartedAt = null;
 let statusOverride = null;
+let sessionPersistenceQueue = Promise.resolve();
+let lastSessionPersistedAt = 0;
 let skippedCheckIns = 0;
 let lastCheckInWasSkipped = false;
 
 const TICK_RATE_MS = 1000;
 const SLEEP_THRESHOLD_MS = 60_000;
+const SESSION_PERSIST_INTERVAL_MS = 30_000;
 const FOCUS_SHIELD_EXTENSION_MINUTES = 15;
 
 // Use a more aggressive tick rate when window is hidden to combat browser throttling
@@ -89,6 +96,7 @@ function cacheDom() {
     dom.startBtn = document.getElementById('startBtn');
     dom.resetBtn = document.getElementById('resetBtn');
     dom.settingsBtn = document.getElementById('settingsBtn');
+    dom.diagnosticsBtn = document.getElementById('diagnosticsBtn');
     dom.testBtn = document.getElementById('testBtn');
     dom.calendarBtn = document.getElementById('calendarBtn');
     dom.sessionGoal = document.getElementById('sessionGoal');
@@ -136,14 +144,100 @@ async function loadSettings() {
 }
 
 function captureRemainingTimes(now = Date.now()) {
-    if (sessionEndTimestamp) {
-        sessionTimeRemaining = Math.max(0, Math.ceil((sessionEndTimestamp - now) / 1000));
-    }
-    if (checkInEndTimestamp) {
-        checkInTimeRemaining = Math.max(0, Math.ceil((checkInEndTimestamp - now) / 1000));
-    }
-    if (writeEndTimestamp) {
-        writeTimeRemaining = Math.max(0, Math.ceil((writeEndTimestamp - now) / 1000));
+    const remainders = captureTimerRemainders({
+        sessionTimeRemaining,
+        checkInTimeRemaining,
+        writeTimeRemaining,
+        sessionEndTimestamp,
+        checkInEndTimestamp,
+        writeEndTimestamp
+    }, now);
+    sessionTimeRemaining = remainders.sessionTimeRemaining;
+    checkInTimeRemaining = remainders.checkInTimeRemaining;
+    writeTimeRemaining = remainders.writeTimeRemaining;
+}
+
+function activeSessionSnapshot() {
+    return {
+        version: 1,
+        phase: isWriting ? 'writing' : (isSessionRunning ? 'active' : 'paused'),
+        sessionGoal: dom.sessionGoal?.value || '',
+        sessionStartedAt,
+        sessionDuration: settings.sessionDuration,
+        checkInInterval: settings.checkInInterval,
+        writeTime: settings.writeTime,
+        sessionTimeRemaining: Math.max(0, Math.round(sessionTimeRemaining)),
+        checkInTimeRemaining: Math.max(0, Math.round(checkInTimeRemaining)),
+        writeTimeRemaining: Math.max(0, Math.round(writeTimeRemaining)),
+        checkInsCompleted,
+        skippedCheckIns,
+        lastCheckInWasSkipped,
+        focusShieldActive,
+        focusShieldUntil,
+        recoveryReason: null
+    };
+}
+
+function persistActiveSession() {
+    if (!isSessionRunning && !isWriting && !sessionStartedAt) return;
+
+    const state = activeSessionSnapshot();
+    sessionPersistenceQueue = sessionPersistenceQueue
+        .catch(() => undefined)
+        .then(() => invoke('save_active_session', { state }))
+        .then(() => {
+            lastSessionPersistedAt = Date.now();
+        })
+        .catch((error) => {
+            console.error('Failed to save active session state:', error);
+            statusOverride = 'Session state could not be saved';
+        });
+}
+
+function clearActiveSession() {
+    sessionPersistenceQueue = sessionPersistenceQueue
+        .catch(() => undefined)
+        .then(() => invoke('clear_active_session'))
+        .catch((error) => console.error('Failed to clear active session state:', error));
+}
+
+async function recoverActiveSession() {
+    try {
+        const state = await invoke('recover_active_session');
+        if (!state) return false;
+
+        const recovered = recoveredSessionSnapshot(state);
+        settings = recovered.settings;
+        sessionTimeRemaining = recovered.sessionTimeRemaining;
+        checkInTimeRemaining = recovered.checkInTimeRemaining;
+        writeTimeRemaining = recovered.writeTimeRemaining;
+        checkInsCompleted = recovered.checkInsCompleted;
+        skippedCheckIns = recovered.skippedCheckIns;
+        lastCheckInWasSkipped = recovered.lastCheckInWasSkipped;
+        focusShieldActive = recovered.focusShieldActive;
+        focusShieldUntil = recovered.focusShieldUntil;
+        sessionStartedAt = recovered.sessionStartedAt;
+        isSessionRunning = false;
+        isWriting = false;
+        sessionEndTimestamp = null;
+        checkInEndTimestamp = null;
+        writeEndTimestamp = null;
+
+        if (dom.sessionGoal) dom.sessionGoal.value = recovered.sessionGoal;
+        if (window.sessionReview && sessionStartedAt) {
+            window.sessionReview.setSessionStartTime(new Date(sessionStartedAt));
+        }
+        if (dom.startBtn) {
+            dom.startBtn.textContent = 'Resume Focus';
+            dom.startBtn.style.background = 'white';
+            dom.startBtn.style.color = 'black';
+        }
+        statusOverride = recovered.statusMessage;
+        return true;
+    } catch (error) {
+        console.error('Failed to recover active session:', error);
+        statusOverride = 'Saved session needs attention';
+        return null;
     }
 }
 
@@ -218,6 +312,11 @@ async function tick() {
         }
     }
     lastTickTimestamp = now;
+
+    if ((isSessionRunning || isWriting) && now - lastSessionPersistedAt >= SESSION_PERSIST_INTERVAL_MS) {
+        captureRemainingTimes(now);
+        persistActiveSession();
+    }
 
     if (focusShieldActive && focusShieldUntil && now >= focusShieldUntil) {
         focusShieldActive = false;
@@ -363,13 +462,17 @@ async function startSession({ autoHide = true } = {}) {
         if (checkInTimeRemaining <= 0 || checkInTimeRemaining > settings.checkInInterval * 60) {
             checkInTimeRemaining = settings.checkInInterval * 60;
         }
-        if (window.sessionReview) {
-            window.sessionReview.setSessionStartTime(new Date());
+        if (!sessionStartedAt) {
+            sessionStartedAt = now;
+            if (window.sessionReview) {
+                window.sessionReview.setSessionStartTime(new Date(sessionStartedAt));
+            }
         }
     }
 
-    sessionEndTimestamp = now + sessionTimeRemaining * 1000;
-    checkInEndTimestamp = now + checkInTimeRemaining * 1000;
+    const deadlines = resumeTimerDeadlines({ sessionTimeRemaining, checkInTimeRemaining }, now);
+    sessionEndTimestamp = deadlines.sessionEndTimestamp;
+    checkInEndTimestamp = deadlines.checkInEndTimestamp;
     isSessionRunning = true;
 
     if (dom.startBtn) {
@@ -380,6 +483,8 @@ async function startSession({ autoHide = true } = {}) {
 
     startTicking();
     updateDisplay();
+    persistActiveSession();
+    await sessionPersistenceQueue;
 
     // Hide window after starting - timer runs in background
     if (autoHide) {
@@ -401,10 +506,11 @@ async function startSession({ autoHide = true } = {}) {
 
     if (reason === 'user') statusOverride = 'Session paused';
     updateDisplay();
+    persistActiveSession();
     stopTickingIfIdle();
 }
 
-function resetSession() {
+function resetSession({ clearPersistedState = true } = {}) {
     isSessionRunning = false;
     isWriting = false;
     checkInsCompleted = 0;
@@ -418,7 +524,11 @@ function resetSession() {
     writeEndTimestamp = null;
     focusShieldActive = false;
     focusShieldUntil = null;
+    sessionStartedAt = null;
     isUsingCalendarEvent = false;
+    lastSessionPersistedAt = 0;
+
+    if (clearPersistedState) clearActiveSession();
 
     hideCheckInScreen();
     stopTickingIfIdle(true);
@@ -474,6 +584,7 @@ async function triggerCheckIn({ forced = false } = {}) {
     writeEndTimestamp = Date.now() + settings.writeTime * 1000;
     checkInsCompleted += 1;
     updateCheckInCountdown();
+    persistActiveSession();
 
     startTicking();
     updateDisplay();
@@ -548,13 +659,12 @@ async function endWriteTime({ auto = false, status } = {}) {
     // This needs to happen BEFORE resuming the session
     checkInTimeRemaining = settings.checkInInterval * 60;
     const now = Date.now();
-    checkInEndTimestamp = now + checkInTimeRemaining * 1000;
+    const deadlines = resumeTimerDeadlines({ sessionTimeRemaining, checkInTimeRemaining }, now);
+    checkInEndTimestamp = deadlines.checkInEndTimestamp;
 
     // CRITICAL: Re-establish session timer
     // The session is still running in the background, we just need to resume ticking
-    if (sessionTimeRemaining > 0) {
-        sessionEndTimestamp = now + sessionTimeRemaining * 1000;
-    }
+    sessionEndTimestamp = deadlines.sessionEndTimestamp;
 
     if (auto) statusOverride = 'Skipped';
     else if (status) statusOverride = `Logged: ${status}`;
@@ -569,6 +679,7 @@ async function endWriteTime({ auto = false, status } = {}) {
 
     // Resume the session (restart ticking)
     isSessionRunning = true;
+    persistActiveSession();
     startTicking();
 
     console.log('endWriteTime done, isSessionRunning after:', isSessionRunning, 'checkInEndTimestamp:', new Date(checkInEndTimestamp).toLocaleTimeString(), 'sessionEndTimestamp:', new Date(sessionEndTimestamp).toLocaleTimeString());
@@ -581,11 +692,14 @@ async function endWriteTime({ auto = false, status } = {}) {
     checkInTimeRemaining = settings.checkInInterval * 60;
 
     const now = Date.now();
-    sessionEndTimestamp = now + sessionTimeRemaining * 1000;
-    checkInEndTimestamp = now + checkInTimeRemaining * 1000;
+    sessionStartedAt = now;
+    const deadlines = resumeTimerDeadlines({ sessionTimeRemaining, checkInTimeRemaining }, now);
+    sessionEndTimestamp = deadlines.sessionEndTimestamp;
+    checkInEndTimestamp = deadlines.checkInEndTimestamp;
 
     statusOverride = 'New cycle started';
     console.log('Session cycle complete, starting new cycle automatically');
+    persistActiveSession();
     updateDisplay();
 }
 
@@ -610,6 +724,7 @@ function extendFocusShield() {
     }
 
     updateFocusShieldUi();
+    persistActiveSession();
     startTicking();
     updateDisplay();
 }
@@ -619,8 +734,25 @@ function cancelFocusShield() {
     focusShieldUntil = null;
     statusOverride = 'Shield off';
     updateFocusShieldUi();
+    persistActiveSession();
     updateDisplay();
     stopTickingIfIdle();
+}
+
+async function showPersistenceDiagnostics() {
+    try {
+        const diagnostics = await invoke('get_persistence_diagnostics');
+        const journalStatus = diagnostics.malformedRecords === 0 && !diagnostics.hasUnterminatedTail
+            ? 'Activity journal: healthy'
+            : `Activity journal: ${diagnostics.malformedRecords} recoverable malformed record(s)`;
+        const tailStatus = diagnostics.hasUnterminatedTail
+            ? '\nThe final record is incomplete. New check-ins will restore a safe line boundary.'
+            : '';
+        alert(`${journalStatus}\nValid activity records: ${diagnostics.validRecords}${tailStatus}`);
+    } catch (error) {
+        console.error('Failed to load persistence diagnostics:', error);
+        alert('Could not inspect local data status. Your activity content was not displayed.');
+    }
 }
 
 async function openSettings() {
@@ -731,6 +863,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (dom.startBtn) dom.startBtn.addEventListener('click', toggleSession);
     if (dom.resetBtn) dom.resetBtn.addEventListener('click', resetSession);
     if (dom.settingsBtn) dom.settingsBtn.addEventListener('click', openSettings);
+    if (dom.diagnosticsBtn) dom.diagnosticsBtn.addEventListener('click', showPersistenceDiagnostics);
     if (dom.testBtn) dom.testBtn.addEventListener('click', testCheckIn);
 
     if (dom.calendarBtn) {
@@ -797,7 +930,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     await loadSettings();
-    resetSession();
+    const recoveredSession = await recoverActiveSession();
+    if (recoveredSession === false) {
+        resetSession({ clearPersistedState: false });
+    }
+    updateDisplay();
 
     // Auto-sync calendar on startup
     useCalendarEvent(true);
@@ -811,46 +948,33 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Listen for settings updates from settings window
-    async function setupSettingsListener() {
-        try {
-            await listen('settings-updated', async (event) => {
-                console.log('Settings updated event received:', event.payload);
-                currentSettings = event.payload;
-
-                // Update timer display if not currently running
-                const startBtn = document.getElementById('startBtn');
-                const isIdle = startBtn.textContent === 'Start Focus';
-
-                if (isIdle) {
-                    const minutes = event.payload.check_in_interval;
-                    document.getElementById('timer').textContent = `${String(minutes).padStart(2, '0')}:00`;
-                    console.log('Timer display updated to:', minutes, 'minutes');
-                } else {
-                    console.log('Timer is running, settings will apply on next session');
-                }
-            });
-        } catch (error) {
-            console.error('Failed to setup settings listener:', error);
-        }
-    }
-
-    setupSettingsListener();
-
+    // Keep user-selected settings while preserving the current timer remainders.
     const unlisten = await listen('settings-updated', (event) => {
         if (event?.payload) {
-            const payload = event.payload;
-            settings = {
-                sessionDuration: payload.session_duration || settings.sessionDuration,
-                checkInInterval: payload.check_in_interval || settings.checkInInterval,
-                writeTime: payload.write_time || settings.writeTime
-            };
             const now = Date.now();
-            captureRemainingTimes(now);
+            const updated = applySettingsUpdate(
+                settings,
+                event.payload,
+                {
+                    sessionTimeRemaining,
+                    checkInTimeRemaining,
+                    writeTimeRemaining,
+                    sessionEndTimestamp,
+                    checkInEndTimestamp,
+                    writeEndTimestamp
+                },
+                isSessionRunning,
+                now
+            );
+            settings = updated.settings;
+            sessionTimeRemaining = updated.remainders.sessionTimeRemaining;
+            checkInTimeRemaining = updated.remainders.checkInTimeRemaining;
+            writeTimeRemaining = updated.remainders.writeTimeRemaining;
             if (isSessionRunning) {
-                sessionEndTimestamp = now + sessionTimeRemaining * 1000;
-                checkInEndTimestamp = now + checkInTimeRemaining * 1000;
+                sessionEndTimestamp = updated.deadlines.sessionEndTimestamp;
+                checkInEndTimestamp = updated.deadlines.checkInEndTimestamp;
             }
+            persistActiveSession();
             updateDisplay();
         }
     });

@@ -816,7 +816,10 @@ fn save_settings(settings: Settings) -> Result<(), String> {
 **Never hardcode secrets:**
 ```rust
 // ❌ Bad
-const API_KEY = "secret123";
+fn api_key() -> String {
+    std::env::var("API_KEY")
+        .expect("API_KEY must be supplied through the environment or a secret manager")
+}
 
 // ✅ Good
 let api_key = std::env::var("API_KEY")?;
