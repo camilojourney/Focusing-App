@@ -141,7 +141,10 @@ pub fn diagnostics_for_path(path: &Path) -> Result<LogDiagnostics, String> {
         .split(|byte| *byte == b'\n')
         .filter(|line| !line.is_empty())
     {
-        if serde_json::from_slice::<LogEntry>(line).is_ok() {
+        let valid_entry = serde_json::from_slice::<LogEntry>(line)
+            .ok()
+            .and_then(|entry| DateTime::parse_from_rfc3339(&entry.timestamp).ok());
+        if valid_entry.is_some() {
             valid_records += 1;
         } else {
             malformed_records += 1;
@@ -274,6 +277,20 @@ mod tests {
         assert_eq!(session_entry.status, "On Task");
         assert_eq!(session_entry.status_label, "✅ On Task");
         assert_eq!(session_entry.note, "Synthetic test note");
+    }
+
+    #[test]
+    fn diagnostics_count_invalid_timestamps_as_malformed_records() {
+        let path = temporary_path("invalid-timestamp");
+        std::fs::write(&path, entry("not-a-timestamp", "On Task")).unwrap();
+
+        let diagnostics = diagnostics_for_path(&path).unwrap();
+
+        assert_eq!(diagnostics.valid_records, 0);
+        assert_eq!(diagnostics.malformed_records, 1);
+        assert!(diagnostics.has_unterminated_tail);
+
+        std::fs::remove_file(path).unwrap();
     }
 
     #[test]

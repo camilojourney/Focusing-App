@@ -106,6 +106,7 @@ pub fn save_to_path(path: &Path, state: &ActiveSessionState) -> Result<(), Strin
             .map_err(|e| format!("Failed to sync active session state: {e}"))?;
         fs::rename(&temporary_path, path)
             .map_err(|e| format!("Failed to finalize active session state: {e}"))?;
+        sync_parent_directory(parent)?;
         Ok(())
     })();
 
@@ -140,6 +141,18 @@ fn unique_suffix() -> u128 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or_default()
+}
+
+#[cfg(unix)]
+fn sync_parent_directory(parent: &Path) -> Result<(), String> {
+    fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|e| format!("Failed to sync active session state directory: {e}"))
+}
+
+#[cfg(not(unix))]
+fn sync_parent_directory(_parent: &Path) -> Result<(), String> {
+    Ok(())
 }
 
 #[cfg(test)]
@@ -199,6 +212,23 @@ mod tests {
         assert_eq!(recovered.check_ins_completed, original.check_ins_completed);
         assert!(recovered.recovery_reason.is_some());
         assert_eq!(recover_from_path(&path).unwrap().unwrap(), recovered);
+
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn saving_session_state_replaces_the_prior_snapshot() {
+        let path = temporary_path("atomic-replace");
+        let original = active_state();
+        save_to_path(&path, &original).unwrap();
+
+        let mut replacement = original.clone();
+        replacement.phase = SessionPhase::Paused;
+        replacement.session_time_remaining = 41_000;
+        save_to_path(&path, &replacement).unwrap();
+
+        let saved: ActiveSessionState = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        assert_eq!(saved, replacement);
 
         fs::remove_file(path).unwrap();
     }
