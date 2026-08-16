@@ -822,7 +822,7 @@ fn api_key() -> String {
 }
 
 // ✅ Good
-let api_key = std::env::var("api_key()")?;
+let api_key = std::env::var("API_KEY")?;
 ```
 
 ---

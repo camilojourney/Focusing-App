@@ -261,12 +261,16 @@ After launching **Hyper Awareness**, you'll see a brain icon (🧠) in your macO
 6. **Auto-Resume**: After you respond, the window hides and the session continues automatically
 7. **Review Anytime**: Click 📊 **Review** to see your session timeline and focus statistics
 
+### Local Review and User-Controlled Export
+
+The Review panel reads the local journal only when you open it. Activity data remains on the device: the app does not automatically export, copy, upload, analyze externally, or send it over the network. The JSONL journal stays user-controlled, so exporting it to another tool is a deliberate manual action you choose outside the app.
+
 ### Configuring Settings
 
 1. Click ⚙️ **Settings** button or access from the tray menu
 2. Adjust your preferences:
    - **Session Duration**: Total focus time in minutes (default: 720 = 12 hours)
-   - **Check-in Interval**: How often to check in (default: 15 minutes)
+   - **Check-in Interval**: How often to check in (default: 20 minutes)
    - **Write Time**: How long you have to respond (default: 20 seconds)
    - **Window Position**: Auto (recommended) or Manual positioning
 3. Click "💾 Save Settings" to apply changes
@@ -317,7 +321,7 @@ The frontend (`src/`) manages UI and user interaction:
 **Session Review** (`js/sessionReview.js`):
 - **Timeline Visualization**: Display all check-ins in chronological order
 - **Statistics**: Calculate focus score, distraction breakdown, time analysis
-- **Export**: Copy session data to clipboard for further analysis
+- **User-Controlled Boundary**: Opens local data only on request; any JSONL export is a manual action outside the app, with no automatic transfer
 
 **State Management:**
 
@@ -541,6 +545,8 @@ Focus Time is ideal for:
 After using Focus Time for a while, you can analyze your focus patterns using the logged data.
 
 ### Viewing Your Data
+
+The journal is local and user-controlled. Viewing, copying, or importing it into another tool is an explicit action you take; Hyper Awareness does not initiate exports or transfers.
 
 ```bash
 # macOS - view your log file

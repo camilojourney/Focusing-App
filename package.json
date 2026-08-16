@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test:timer": "node --test tests/timer-state.test.mjs",
     "tauri": "tauri",
     "check:tauri-versions": "node scripts/check-tauri-versions.js"
   },

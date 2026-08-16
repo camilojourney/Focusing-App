@@ -23,7 +23,7 @@ Preserve a local active focus session across an app restart or long sleep interr
 5. Check-ins are parsed and normalized by Rust before append. The writer examines the final byte and writes a newline boundary before a new record when an interrupted trailing record lacks one. It never rewrites or deletes historical bytes.
 6. The diagnostics command reports only valid-record count, malformed-record count, and unterminated-tail status. It does not return activity text.
 7. Existing JSONL records remain compatible. Invalid historical records remain in place and are counted, while valid records before and after them remain readable. A future state schema version requires an explicit migration instead of a silent reset.
-8. The app remains local-first. It adds no network transfer, telemetry, external analysis, or storage migration.
+8. The app remains local-first. The Review panel reads the journal only when the user opens it; any JSONL export is a separate manual action outside the app. It adds no network transfer, telemetry, automatic external analysis, or storage migration.
 
 ## 4. Data Contracts and UI States
 
@@ -60,8 +60,9 @@ The UI presents this metadata without exposing journal content.
 | --- | --- |
 | Interrupted runs are recovered accurately or explicitly represented | The established sleep-gap path calls `pauseSession`; saved state is reconciled to `interrupted` after restart. `restart_recovery_marks_active_session_interrupted_without_resetting_it` verifies preserved synthetic state. |
 | Activity history survives a truncated final record | The writer restores only the newline boundary, then appends a normalized record. `append_after_unterminated_tail_keeps_prior_valid_records_and_new_record` verifies valid synthetic records on both sides remain readable. |
-| Cadence and reminder defaults are configurable | Existing settings controls remain user-configurable. Defaults are 20 minutes and 20 seconds in Rust and settings UI; saved user settings are not overwritten. |
-| History remains exportable and local-first | JSONL remains the append-only journal, with no network code added. |
+| Cadence and reminder defaults are configurable | Existing settings controls remain user-configurable. Defaults are 20 minutes and 20 seconds in Rust and settings UI; saved user settings are not overwritten. `tests/timer-state.test.mjs` proves an active timer retains its remainders while a user configuration update takes effect. |
+| Timer transitions retain correct remaining time | `tests/timer-state.test.mjs` proves pause capture rounds remaining time up and resume derives fresh deadlines from those preserved values. |
+| History remains exportable and local-first | JSONL remains the append-only journal. Review opens it only after a user action, and any export is manual outside the app; no network code is added. |
 | Recoverable issues are visible without exposing activity content | `get_persistence_diagnostics` returns counts and tail state only; the Data status UI displays those values. |
 | Practical installation and accurate purpose | README documents frozen installs, manual bundle update, local-data preservation, and no health or performance guarantee. |
-| Focused checks | Run `cargo fmt --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`, `pnpm install --frozen-lockfile`, and `pnpm run build`; conduct an isolated-profile lifecycle check when buildable. |
+| Focused checks | Run `cargo fmt --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`, `pnpm install --frozen-lockfile`, `pnpm run test:timer`, and `pnpm run build`; conduct an isolated-profile lifecycle check when buildable. |
